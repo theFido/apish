@@ -1,4 +1,4 @@
-keyword = { "headers" }
+keyword = { "headers" | "params" | "query" }
 
 kwd_delimiter = _{ ":" }
 
@@ -33,8 +33,53 @@ char = {
 
 inner = @{ char* }
 
-string = ${ "\"" ~ inner ~ "\"" }
+d_quote = _{ "\"" }
 
-item = { space+ ~ ident ~ space ~ data_type ~ space ~ modified_pair* ~ space ~ single_modifiers* ~ space ~ default_value* ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
+string = @{ d_quote ~ inner ~ d_quote }
+
+options = { space+ ~ (modified_pair | single_modifiers | default_value) }
+
+item = { space+ ~ ident ~ space ~ data_type ~ options* ~ space* ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
 
 item_list = { item* }
+
+spec_item = _{ option ~ NEWLINE }
+
+spec_items = { spec_item ~ item_list }
+
+blank_line = _{ space* ~ NEWLINE }
+
+path_id = { "{" ~ ident ~ "}" }
+
+path_token = { "/" | path_id }
+
+sub_path = { path_token+ ~ ident* }
+
+api_single_keyword = { "headers" | "params" | "query" | "produces" | "consumes" }
+
+http_verb = { "get" | "post" | "put" | "delete" | "patch" }
+
+word_list = { space+ ~ ident }
+
+api_use_case = { space+ ~ string* ~ NEWLINE }
+api_use_cases = { space+ ~ "use_cases:" ~ NEWLINE ~ api_use_case* }
+api_single_option = { space+ ~ api_single_keyword ~ kwd_delimiter ~ word_list* ~ NEWLINE}
+api_status_codes = { space+ ~ "status_codes" ~ kwd_delimiter ~ word_list+ ~ NEWLINE}
+api_params = { api_single_option | api_use_cases | api_status_codes }
+api_op = { space+ ~ http_verb ~ kwd_delimiter ~ space+ ~ string* ~ NEWLINE ~ api_params* }
+path = { space+ ~ sub_path* ~ kwd_delimiter }
+api = { path* ~ NEWLINE ~ api_op* }
+apis = { "apis:" ~ NEWLINE ~ api* ~ NEWLINE* }
+
+comment = _{ "//" ~ (!"\n" ~ ANY)* }
+
+irrelevant = _{ comment | blank_line }
+
+status_codes_single_modifiers = { "retryable" }
+status_codes_options = { space+ ~ status_codes_single_modifiers }
+status_codes_kwd = { "status_codes:" ~ NEWLINE }
+status_code_n = { ASCII_DIGIT* }
+status_code_desc = { space+ ~ status_code_n ~ status_codes_options* ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
+status_codes = { status_codes_kwd ~ status_code_desc* }
+
+api_file = { SOI ~ spec_items* ~ status_codes* ~ irrelevant* ~ apis ~ EOI }
