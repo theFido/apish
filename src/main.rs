@@ -195,7 +195,7 @@ impl Project {
                 let arg = Argument {
                     name: header.name.clone(),
                     description: header.description.clone(),
-                    data_type: DataType::String,
+                    data_type: header.data_type.clone(),
                     required: header.required,
                     default_value: header.default_value.clone(),
                 };
@@ -212,7 +212,7 @@ impl Project {
                 let arg = Argument {
                     name: query.name.clone(),
                     description: query.description.clone(),
-                    data_type: DataType::String,
+                    data_type: query.data_type.clone(),
                     required: query.required,
                     default_value: query.default_value.clone(),
                 };
@@ -229,8 +229,7 @@ impl Project {
                 let arg = Argument {
                     name: path_param.name.clone(),
                     description: path_param.description.clone(),
-                    // ToDo: Clone data type
-                    data_type: DataType::String,
+                    data_type: path_param.data_type.clone(),
                     required: path_param.required,
                     default_value: path_param.default_value.clone(),
                 };
@@ -371,6 +370,17 @@ impl API {
             api.insert(api_path, api_def);
         }
         api
+    }
+}
+
+impl Clone for DataType {
+    fn clone(&self) -> Self {
+        match self {
+            DataType::String => DataType::String,
+            DataType::Boolean => DataType::Boolean,
+            DataType::Number => DataType::Number,
+            _ => DataType::Unknown,
+        }
     }
 }
 
@@ -665,27 +675,27 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                                             "params" => {
                                                 definition
                                                     .path_params
-                                                    .push(single_opt.as_str().to_owned());
+                                                    .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             "query" => {
                                                 definition
                                                     .query_string
-                                                    .push(single_opt.as_str().to_owned());
+                                                    .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             "headers" => {
                                                 definition
                                                     .headers
-                                                    .push(single_opt.as_str().to_owned());
+                                                    .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             "produces" => {
                                                 definition
                                                     .produces
-                                                    .push(single_opt.as_str().to_owned());
+                                                    .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             "consumes" => {
                                                 definition
                                                     .consumes
-                                                    .push(single_opt.as_str().to_owned());
+                                                    .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             _ => {
                                                 // not place to attach
