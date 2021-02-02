@@ -9,16 +9,16 @@ extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
-use std::collections::HashMap;
 
 use pest::iterators::Pair;
 use pest::Parser;
 
 use structopt::StructOpt;
 
-use serde::{Serialize};
+use serde::Serialize;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -51,9 +51,13 @@ enum HttpMethod {
 struct Opt {
     #[structopt(short = "f", help = "Input file")]
     input: String,
-    #[structopt(short = "o", help = "Output file", default_value="./api.json")]
+    #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
-    #[structopt(short = "s", help = "Spec output file (OpenAPI superset)", default_value="./api-spec.json")]
+    #[structopt(
+        short = "s",
+        help = "Spec output file (OpenAPI superset)",
+        default_value = "./api-spec.json"
+    )]
     spec_output: String,
 }
 
@@ -76,6 +80,7 @@ struct StatusCode {
 #[derive(Debug, Serialize)]
 struct APIEndpoint {
     description: String,
+    operation: String,
     use_cases: Vec<String>,
     params: Vec<Argument>,
     query_strings: Vec<Argument>,
@@ -116,6 +121,7 @@ struct Project {
 #[derive(Debug, Serialize)]
 struct APIConfiguration {
     description: String,
+    operation: String,
     query_string: Vec<String>,
     path_params: Vec<String>,
     headers: Vec<String>,
@@ -145,7 +151,7 @@ impl StatusCode {
         StatusCode {
             code: code.to_string(),
             description: description.to_string(),
-            is_retryable: false
+            is_retryable: false,
         }
     }
 }
@@ -178,9 +184,7 @@ impl Project {
                     }
                 }
             }
-            Err(e) => {
-                return Err(format!("Cannot parse API definition {}", e))
-            }
+            Err(e) => return Err(format!("Cannot parse API definition {}", e)),
         }
     }
 
@@ -193,7 +197,7 @@ impl Project {
                     description: header.description.clone(),
                     data_type: DataType::String,
                     required: header.required,
-                    default_value: header.default_value.clone()
+                    default_value: header.default_value.clone(),
                 };
                 return Some(arg);
             }
@@ -210,7 +214,7 @@ impl Project {
                     description: query.description.clone(),
                     data_type: DataType::String,
                     required: query.required,
-                    default_value: query.default_value.clone()
+                    default_value: query.default_value.clone(),
                 };
                 return Some(arg);
             }
@@ -228,7 +232,7 @@ impl Project {
                     // ToDo: Clone data type
                     data_type: DataType::String,
                     required: path_param.required,
-                    default_value: path_param.default_value.clone()
+                    default_value: path_param.default_value.clone(),
                 };
                 return Some(arg);
             }
@@ -243,57 +247,30 @@ impl Project {
                 let project_status = StatusCode {
                     code: code.code.to_string(),
                     description: code.description.to_string(),
-                    is_retryable: code.is_retryable
+                    is_retryable: code.is_retryable,
                 };
                 return Some(project_status);
             }
         }
         match status_code.as_str() {
-            "200" => {
-                Some(StatusCode::new(status_code.as_str(), "Ok"))
-            },
-            "201" => {
-                Some(StatusCode::new(status_code.as_str(), "Created"))
-            },
-            "202" => {
-                Some(StatusCode::new(status_code.as_str(), "Accepted"))
-            },
-            "204" => {
-                Some(StatusCode::new(status_code.as_str(), "No Content"))
-            },
-            "400" => {
-                Some(StatusCode::new(status_code.as_str(), "Bad Request"))
-            },
-            "401" => {
-                Some(StatusCode::new(status_code.as_str(), "Unauthorized"))
-            },
-            "403" => {
-                Some(StatusCode::new(status_code.as_str(), "Forbidden"))
-            },
-            "404" => {
-                Some(StatusCode::new(status_code.as_str(), "Not Found"))
-            },
-            "405" => {
-                Some(StatusCode::new(status_code.as_str(), "Method Not Allowed"))
-            },
-            "408" => {
-                Some(StatusCode::new(status_code.as_str(), "Request Timeout"))
-            },
-            "413" => {
-                Some(StatusCode::new(status_code.as_str(), "Payload Too Large"))
-            },
-            "415" => {
-                Some(StatusCode::new(status_code.as_str(), "Unsupported Media Type"))
-            },
-            "424" => {
-                Some(StatusCode::new(status_code.as_str(), "Failed Dependency"))
-            },
-            "429" => {
-                Some(StatusCode::new(status_code.as_str(), "Too Many Requests"))
-            },
-            _ => {
-                Some(StatusCode::new(status_code.as_str(), ""))
-            }
+            "200" => Some(StatusCode::new(status_code.as_str(), "Ok")),
+            "201" => Some(StatusCode::new(status_code.as_str(), "Created")),
+            "202" => Some(StatusCode::new(status_code.as_str(), "Accepted")),
+            "204" => Some(StatusCode::new(status_code.as_str(), "No Content")),
+            "400" => Some(StatusCode::new(status_code.as_str(), "Bad Request")),
+            "401" => Some(StatusCode::new(status_code.as_str(), "Unauthorized")),
+            "403" => Some(StatusCode::new(status_code.as_str(), "Forbidden")),
+            "404" => Some(StatusCode::new(status_code.as_str(), "Not Found")),
+            "405" => Some(StatusCode::new(status_code.as_str(), "Method Not Allowed")),
+            "408" => Some(StatusCode::new(status_code.as_str(), "Request Timeout")),
+            "413" => Some(StatusCode::new(status_code.as_str(), "Payload Too Large")),
+            "415" => Some(StatusCode::new(
+                status_code.as_str(),
+                "Unsupported Media Type",
+            )),
+            "424" => Some(StatusCode::new(status_code.as_str(), "Failed Dependency")),
+            "429" => Some(StatusCode::new(status_code.as_str(), "Too Many Requests")),
+            _ => Some(StatusCode::new(status_code.as_str(), "")),
         }
     }
 
@@ -303,7 +280,7 @@ impl Project {
             match self.get_header(item) {
                 Some(header) => {
                     headers.push(header);
-                },
+                }
                 None => {}
             }
         }
@@ -316,7 +293,7 @@ impl Project {
             match self.get_query_string(item) {
                 Some(qs) => {
                     query_strings.push(qs);
-                },
+                }
                 None => {}
             }
         }
@@ -351,31 +328,33 @@ impl Project {
 }
 
 impl APIEndpoint {
-    fn new_from_api_configuration(configuration: &Option<APIConfiguration>, project: &Project) -> Option<APIEndpoint> {
+    fn new_from_api_configuration(
+        configuration: &Option<APIConfiguration>,
+        project: &Project,
+    ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
                 let endpoint = APIEndpoint {
                     description: config.description.to_owned(),
+                    operation: config.operation.to_owned(),
                     use_cases: config.use_cases.clone(),
                     params: project.get_path_params(&config.path_params),
                     query_strings: project.get_query_strings(&config.query_string),
                     headers: project.get_headers(&config.headers),
                     status_codes: project.get_status_codes(&config.status_codes),
                     produces: get_mime_types(&config.produces),
-                    consumes: get_mime_types(&config.consumes)
+                    consumes: get_mime_types(&config.consumes),
                 };
                 Some(endpoint)
             }
-             None => {
-                 None
-             }
+            None => None,
         }
     }
 }
 
 impl API {
     fn new_from_api_definition(def: &APIDefinition, project: &Project) -> API {
-        API{
+        API {
             get: APIEndpoint::new_from_api_configuration(&def.get, project),
             post: APIEndpoint::new_from_api_configuration(&def.post, project),
             put: APIEndpoint::new_from_api_configuration(&def.put, project),
@@ -386,7 +365,7 @@ impl API {
 
     fn new_from_project(project: Project) -> HashMap<String, API> {
         let mut api = HashMap::new();
-        for endpoint in &project.endpoints{
+        for endpoint in &project.endpoints {
             let api_path = endpoint.0.to_owned();
             let api_def = API::new_from_api_definition(&endpoint.1, &project);
             api.insert(api_path, api_def);
@@ -451,7 +430,7 @@ impl ProjectArgument {
 
 fn get_mime_types(list: &Vec<String>) -> Vec<String> {
     let mut mime_types = Vec::new();
-    let mime_map : HashMap<String, String> = [
+    let mime_map: HashMap<String, String> = [
         ("json".to_owned(), "application/json".to_owned()),
         ("xml".to_owned(), "application/xml".to_owned()),
         ("text".to_owned(), "text/plain".to_owned()),
@@ -461,13 +440,16 @@ fn get_mime_types(list: &Vec<String>) -> Vec<String> {
         ("js".to_owned(), "application/javascript".to_owned()),
         ("multipart".to_owned(), "multipart/form-data".to_owned()),
         ("binary".to_owned(), "application/octet-stream".to_owned()),
-    ].iter().cloned().collect();
+    ]
+    .iter()
+    .cloned()
+    .collect();
     for item in list {
         let trimmed = item.trim().clone().to_owned();
         match mime_map.get(&trimmed) {
             Some(mime_type) => {
                 mime_types.push(mime_type.to_owned());
-            },
+            }
             None => {
                 mime_types.push(trimmed.clone());
             }
@@ -601,8 +583,8 @@ fn parse_status_code(pair: Pair<Rule>) -> Result<StatusCode, String> {
     for sub_rule in pair.into_inner() {
         match sub_rule.as_rule() {
             Rule::string => {
-              status_code.description = normalize_parsed(sub_rule.as_str());
-            },
+                status_code.description = normalize_parsed(sub_rule.as_str());
+            }
             Rule::status_code_n => {
                 status_code.code = sub_rule.as_str().to_owned();
             }
@@ -627,6 +609,7 @@ fn parse_status_code(pair: Pair<Rule>) -> Result<StatusCode, String> {
 fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration)> {
     let mut definition = APIConfiguration {
         description: "".to_string(),
+        operation: "".to_string(),
         query_string: vec![],
         path_params: vec![],
         headers: vec![],
@@ -642,16 +625,16 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                 match api_pair.as_str().to_ascii_lowercase().as_str() {
                     "get" => {
                         current_method = HttpMethod::Get;
-                    },
+                    }
                     "post" => {
                         current_method = HttpMethod::Post;
-                    },
+                    }
                     "put" => {
                         current_method = HttpMethod::Put;
-                    },
+                    }
                     "delete" => {
                         current_method = HttpMethod::Delete;
-                    },
+                    }
                     "patch" => {
                         current_method = HttpMethod::Patch;
                     }
@@ -659,68 +642,85 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                         // ignore
                     }
                 }
-            },
+            }
             Rule::api_params => {
-              let mut current_keyword = "";
-              for param in api_pair.into_inner() {
-                  match param.as_rule() {
-                      Rule::api_use_cases => {
-                          for use_case in param.into_inner() {
-                              definition.use_cases.push(normalize_parsed(use_case.as_str()));
-                          }
-                      },
-                      Rule::api_single_option => {
-                        for single_opt in param.into_inner() {
-                            match single_opt.as_rule() {
-                                Rule::api_single_keyword => {
-                                    current_keyword = single_opt.as_str();
-                                }
-                                Rule::word_list => {
-                                    match current_keyword {
-                                        "params" => {
-                                            definition.path_params.push(single_opt.as_str().to_owned());
-                                        }
-                                        "query" => {
-                                            definition.query_string.push(single_opt.as_str().to_owned());
-                                        }
-                                        "headers" => {
-                                            definition.headers.push(single_opt.as_str().to_owned());
-                                        }
-                                        "produces" => {
-                                            definition.produces.push(single_opt.as_str().to_owned());
-                                        }
-                                        "consumes" => {
-                                            definition.consumes.push(single_opt.as_str().to_owned());
-                                        }
-                                        _ => {
-                                            // not place to attach
+                let mut current_keyword = "";
+                for param in api_pair.into_inner() {
+                    match param.as_rule() {
+                        Rule::api_use_cases => {
+                            for use_case in param.into_inner() {
+                                definition
+                                    .use_cases
+                                    .push(normalize_parsed(use_case.as_str()));
+                            }
+                        }
+                        Rule::api_single_option => {
+                            for single_opt in param.into_inner() {
+                                match single_opt.as_rule() {
+                                    Rule::api_single_keyword => {
+                                        current_keyword = single_opt.as_str();
+                                    }
+                                    Rule::word_list => {
+                                        match current_keyword {
+                                            "params" => {
+                                                definition
+                                                    .path_params
+                                                    .push(single_opt.as_str().to_owned());
+                                            }
+                                            "query" => {
+                                                definition
+                                                    .query_string
+                                                    .push(single_opt.as_str().to_owned());
+                                            }
+                                            "headers" => {
+                                                definition
+                                                    .headers
+                                                    .push(single_opt.as_str().to_owned());
+                                            }
+                                            "produces" => {
+                                                definition
+                                                    .produces
+                                                    .push(single_opt.as_str().to_owned());
+                                            }
+                                            "consumes" => {
+                                                definition
+                                                    .consumes
+                                                    .push(single_opt.as_str().to_owned());
+                                            }
+                                            _ => {
+                                                // not place to attach
+                                            }
                                         }
                                     }
-                                }
-                                _ => {
-                                    println!("ignoring unknown option {:?}", single_opt);
+                                    _ => {
+                                        println!("ignoring unknown option {:?}", single_opt);
+                                    }
                                 }
                             }
                         }
-                      },
-                      Rule::api_status_codes => {
-                          for status in param.into_inner() {
-                              let code = normalize_parsed(status.as_str());
-                              definition.status_codes.push(code);
-                          }
-                      },
-                      _ => {
-                          println!("ignoring param {:?}", param);
-                      }
-                  }
-              }
-            },
+                        Rule::api_operation => {
+                            for op in param.into_inner() {
+                                definition.operation = normalize_parsed(op.as_str());
+                            }
+                        }
+                        Rule::api_status_codes => {
+                            for status in param.into_inner() {
+                                let code = normalize_parsed(status.as_str());
+                                definition.status_codes.push(code);
+                            }
+                        }
+                        _ => {
+                            println!("ignoring param {:?}", param);
+                        }
+                    }
+                }
+            }
             Rule::string => {
-              definition.description = normalize_parsed(api_pair.as_str());
-            },
+                definition.description = normalize_parsed(api_pair.as_str());
+            }
             _ => {
-              println!("ignoring {:?}", api_pair);
-            },
+                println!("ignoring {:?}", api_pair);
+            }
         }
     }
     Some((current_method, definition))
@@ -734,48 +734,43 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
             post: None,
             put: None,
             delete: None,
-            patch: None
-        }
+            patch: None,
+        },
     };
     let mut current_endpoint = String::new();
-    for api_sub_rule in pair.into_inner(){
+    for api_sub_rule in pair.into_inner() {
         match api_sub_rule.as_rule() {
             Rule::path => {
                 for sub_path in api_sub_rule.into_inner() {
                     current_endpoint += sub_path.as_str();
                 }
                 wrapper.endpoint = current_endpoint.to_owned();
-            },
+            }
             Rule::api_op => {
-
                 match parse_api_operation(api_sub_rule) {
-                    Some(definition) => {
-                        match definition.0 {
-                            HttpMethod::Get => {
-                                wrapper.definition.get = Some(definition.1);
-                            },
-                            HttpMethod::Post => {
-                                wrapper.definition.post = Some(definition.1);
-                            },
-                            HttpMethod::Put => {
-                                wrapper.definition.put = Some(definition.1);
-                            },
-                            HttpMethod::Delete => {
-                                wrapper.definition.delete = Some(definition.1);
-                            },
-                            HttpMethod::Patch => {
-                                wrapper.definition.patch = Some(definition.1);
-                            },
-                            _ => {
-
-                            }
+                    Some(definition) => match definition.0 {
+                        HttpMethod::Get => {
+                            wrapper.definition.get = Some(definition.1);
                         }
+                        HttpMethod::Post => {
+                            wrapper.definition.post = Some(definition.1);
+                        }
+                        HttpMethod::Put => {
+                            wrapper.definition.put = Some(definition.1);
+                        }
+                        HttpMethod::Delete => {
+                            wrapper.definition.delete = Some(definition.1);
+                        }
+                        HttpMethod::Patch => {
+                            wrapper.definition.patch = Some(definition.1);
+                        }
+                        _ => {}
                     },
                     None => {
                         // ignore
-                    },
+                    }
                 }
-            },
+            }
             _ => {
                 println!("skipping {:?}", api_sub_rule);
             }
@@ -788,7 +783,7 @@ fn normalize_parsed(source: &str) -> String {
     let mut normalized = source.trim().clone().to_owned();
     let d_quote = "\"";
     if normalized.starts_with(d_quote) && normalized.ends_with(d_quote) {
-        normalized.remove(normalized.len() -1 );
+        normalized.remove(normalized.len() - 1);
         normalized.remove(0);
     }
     normalized
@@ -866,9 +861,11 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
         Rule::apis => {
             for api in pair.into_inner() {
                 let wrapped_api = parse_api(api);
-                project.endpoints.insert(wrapped_api.endpoint, wrapped_api.definition);
+                project
+                    .endpoints
+                    .insert(wrapped_api.endpoint, wrapped_api.definition);
             }
-        },
+        }
         _ => {
             // println!("Top level rule ignored: {:?}", pair);
         }
@@ -916,5 +913,4 @@ fn main() {
             println!("{} {}", failure_icon, e);
         }
     }
-
 }
