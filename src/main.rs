@@ -92,10 +92,15 @@ struct APIEndpoint {
 
 #[derive(Debug, Serialize)]
 struct API {
+    #[serde(skip_serializing_if = "Option::is_none")]
     get: Option<APIEndpoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     post: Option<APIEndpoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     put: Option<APIEndpoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     delete: Option<APIEndpoint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     patch: Option<APIEndpoint>,
 }
 
@@ -133,13 +138,19 @@ struct APIConfiguration {
 
 #[derive(Debug, Serialize)]
 struct APIDefinition {
+    #[serde(skip_serializing_if = "Option::is_none")]
     get: Option<APIConfiguration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     post: Option<APIConfiguration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     put: Option<APIConfiguration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     delete: Option<APIConfiguration>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     patch: Option<APIConfiguration>,
 }
 
+// ToDo: Replace me
 #[derive(Debug)]
 struct APIWrapper {
     endpoint: String,
@@ -909,6 +920,8 @@ fn test_item_parser() {
 fn main() {
     let failure_icon = "🧟";
     let opt = Opt::from_args();
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    println!("APIsh 🙊 v{}", VERSION);
     println!("Reading API from {}", opt.input);
     match Project::new_from_file(opt.input) {
         Ok(project) => {
