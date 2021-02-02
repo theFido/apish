@@ -3,7 +3,7 @@
 OpenAPI pre-processor heavily inspired by [Stylus](https://stylus-lang.com) and 
 [Sass](https://sass-lang.com).
 
-Produly written in [Rust](https://www.rust-lang.org) 🦀.
+🙊 Proudly written in [Rust](https://www.rust-lang.org) 🦀.
 
 ## Motivation
 
@@ -37,6 +37,7 @@ status_codes:
 apis:
   /api/contact:
     get: "Returns all contact information"
+      operation: getContact
       headers: auth opt1
       produces: json
       query: filter
