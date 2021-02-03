@@ -187,22 +187,21 @@ impl Project {
                     Some(pair) => {
                         let mut project = Project::new();
                         parse_value(pair, &mut project);
-                        return Ok(project);
+                        Ok(project)
                     }
                     None => {
                         println!("Did not find any API element");
-                        return Err("Cannot process file".to_string());
+                        Err("Cannot process file".to_string())
                     }
                 }
             }
-            Err(e) => return Err(format!("Cannot parse API definition {}", e)),
+            Err(e) => Err(format!("Cannot parse API definition {}", e)),
         }
     }
 
-    fn get_header(&self, name: &String) -> Option<Argument> {
+    fn get_header(&self, name: &str) -> Option<Argument> {
         for header in &self.headers {
-            let owned_name = name.trim().clone();
-            if header.alias == owned_name || header.name == owned_name {
+            if header.alias == name || header.name == name {
                 let arg = Argument {
                     name: header.name.clone(),
                     description: header.description.clone(),
@@ -216,10 +215,9 @@ impl Project {
         None
     }
 
-    fn get_query_string(&self, name: &String) -> Option<Argument> {
+    fn get_query_string(&self, name: &str) -> Option<Argument> {
         for query in &self.query {
-            let owned_name = name.trim().clone();
-            if query.alias == owned_name || query.name == owned_name {
+            if query.alias == name || query.name == name {
                 let arg = Argument {
                     name: query.name.clone(),
                     description: query.description.clone(),
@@ -233,10 +231,9 @@ impl Project {
         None
     }
 
-    fn get_path_param(&self, name: &String) -> Option<Argument> {
+    fn get_path_param(&self, name: &str) -> Option<Argument> {
         for path_param in &self.params {
-            let owned_name = name.trim().clone();
-            if path_param.alias == owned_name || path_param.name == owned_name {
+            if path_param.alias == name || path_param.name == name {
                 let arg = Argument {
                     name: path_param.name.clone(),
                     description: path_param.description.clone(),
@@ -250,10 +247,9 @@ impl Project {
         None
     }
 
-    fn get_status_code(&self, status_code: &String) -> Option<StatusCode> {
+    fn get_status_code(&self, status_code: &str) -> Option<StatusCode> {
         for code in &self.status_codes {
-            let owned_name = status_code.clone();
-            if code.code == owned_name {
+            if code.code == status_code {
                 let project_status = StatusCode {
                     code: code.code.to_string(),
                     description: code.description.to_string(),
@@ -262,75 +258,63 @@ impl Project {
                 return Some(project_status);
             }
         }
-        match status_code.as_str() {
-            "200" => Some(StatusCode::new(status_code.as_str(), "Ok")),
-            "201" => Some(StatusCode::new(status_code.as_str(), "Created")),
-            "202" => Some(StatusCode::new(status_code.as_str(), "Accepted")),
-            "204" => Some(StatusCode::new(status_code.as_str(), "No Content")),
-            "400" => Some(StatusCode::new(status_code.as_str(), "Bad Request")),
-            "401" => Some(StatusCode::new(status_code.as_str(), "Unauthorized")),
-            "403" => Some(StatusCode::new(status_code.as_str(), "Forbidden")),
-            "404" => Some(StatusCode::new(status_code.as_str(), "Not Found")),
-            "405" => Some(StatusCode::new(status_code.as_str(), "Method Not Allowed")),
-            "408" => Some(StatusCode::new(status_code.as_str(), "Request Timeout")),
-            "413" => Some(StatusCode::new(status_code.as_str(), "Payload Too Large")),
+        match status_code {
+            "200" => Some(StatusCode::new(status_code, "Ok")),
+            "201" => Some(StatusCode::new(status_code, "Created")),
+            "202" => Some(StatusCode::new(status_code, "Accepted")),
+            "204" => Some(StatusCode::new(status_code, "No Content")),
+            "400" => Some(StatusCode::new(status_code, "Bad Request")),
+            "401" => Some(StatusCode::new(status_code, "Unauthorized")),
+            "403" => Some(StatusCode::new(status_code, "Forbidden")),
+            "404" => Some(StatusCode::new(status_code, "Not Found")),
+            "405" => Some(StatusCode::new(status_code, "Method Not Allowed")),
+            "408" => Some(StatusCode::new(status_code, "Request Timeout")),
+            "413" => Some(StatusCode::new(status_code, "Payload Too Large")),
             "415" => Some(StatusCode::new(
-                status_code.as_str(),
+                status_code,
                 "Unsupported Media Type",
             )),
-            "424" => Some(StatusCode::new(status_code.as_str(), "Failed Dependency")),
-            "429" => Some(StatusCode::new(status_code.as_str(), "Too Many Requests")),
-            _ => Some(StatusCode::new(status_code.as_str(), "")),
+            "424" => Some(StatusCode::new(status_code, "Failed Dependency")),
+            "429" => Some(StatusCode::new(status_code, "Too Many Requests")),
+            _ => Some(StatusCode::new(status_code, "")),
         }
     }
 
-    fn get_headers(&self, list: &Vec<String>) -> Vec<Argument> {
+    fn get_headers(&self, list: &[String]) -> Vec<Argument> {
         let mut headers = Vec::new();
         for item in list {
-            match self.get_header(item) {
-                Some(header) => {
-                    headers.push(header);
-                }
-                None => {}
+            if let Some(header) = self.get_header(item) {
+                headers.push(header);
             }
         }
         headers
     }
 
-    fn get_query_strings(&self, list: &Vec<String>) -> Vec<Argument> {
+    fn get_query_strings(&self, list: &[String]) -> Vec<Argument> {
         let mut query_strings = Vec::new();
         for item in list {
-            match self.get_query_string(item) {
-                Some(qs) => {
-                    query_strings.push(qs);
-                }
-                None => {}
+            if let Some(qs) = self.get_query_string(item) {
+                query_strings.push(qs);
             }
         }
         query_strings
     }
 
-    fn get_path_params(&self, list: &Vec<String>) -> Vec<Argument> {
+    fn get_path_params(&self, list: &[String]) -> Vec<Argument> {
         let mut path_params = Vec::new();
         for item in list {
-            match self.get_path_param(item) {
-                Some(path_param) => {
-                    path_params.push(path_param);
-                }
-                None => {}
+            if let Some(path_param) = self.get_path_param(item) {
+                path_params.push(path_param);
             }
         }
         path_params
     }
 
-    fn get_status_codes(&self, list: &Vec<String>) -> Vec<StatusCode> {
+    fn get_status_codes(&self, list: &[String]) -> Vec<StatusCode> {
         let mut codes = Vec::new();
         for status in list {
-            match self.get_status_code(status) {
-                Some(sc) => {
-                    codes.push(sc);
-                }
-                None => {}
+            if let Some(sc) = self.get_status_code(status) {
+                codes.push(sc);
             }
         }
         codes
@@ -411,7 +395,7 @@ impl PartialEq for DataType {
         if self.as_str() == other.as_str() {
             return true;
         }
-        return false;
+        false
     }
 }
 
@@ -449,7 +433,7 @@ impl ProjectArgument {
     }
 }
 
-fn get_mime_types(list: &Vec<String>) -> Vec<String> {
+fn get_mime_types(list: &[String]) -> Vec<String> {
     let mut mime_types = Vec::new();
     let mime_map: HashMap<String, String> = [
         ("json".to_owned(), "application/json".to_owned()),
@@ -466,7 +450,7 @@ fn get_mime_types(list: &Vec<String>) -> Vec<String> {
     .cloned()
     .collect();
     for item in list {
-        let trimmed = item.trim().clone().to_owned();
+        let trimmed = item.trim().to_owned();
         match mime_map.get(&trimmed) {
             Some(mime_type) => {
                 mime_types.push(mime_type.to_owned());
@@ -479,11 +463,12 @@ fn get_mime_types(list: &Vec<String>) -> Vec<String> {
     mime_types
 }
 
+// ToDo: Return error
 fn get_file_content(file_name: String) -> String {
     match fs::read_to_string(file_name) {
         Ok(content) => content,
         _ => {
-            return "".to_string();
+            String::new()
         }
     }
 }
@@ -526,13 +511,8 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                                     }
                                 }
                             }
-                            match key {
-                                PairModifiers::Alias => {
-                                    arg.alias = value;
-                                }
-                                _ => {
-                                    // ignore
-                                }
+                            if let PairModifiers::Alias = key {
+                                arg.alias = value;
                             }
                         }
                         Rule::single_modifiers => match opt.as_str() {
@@ -545,13 +525,8 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                         },
                         Rule::default_value => {
                             for dv_inner in opt.into_inner() {
-                                match dv_inner.as_rule() {
-                                    Rule::ident => {
-                                        arg.default_value = dv_inner.as_str().to_owned();
-                                    }
-                                    _ => {
-                                        // do nothing
-                                    }
+                                if let Rule::ident = dv_inner.as_rule() {
+                                    arg.default_value = dv_inner.as_str().to_owned();
                                 }
                             }
                         }
@@ -610,13 +585,8 @@ fn parse_status_code(pair: Pair<Rule>) -> Result<StatusCode, String> {
                 status_code.code = sub_rule.as_str().to_owned();
             }
             Rule::status_codes_options => {
-                match sub_rule.as_str() {
-                    " retryable" => {
-                        status_code.is_retryable = true;
-                    }
-                    _ => {
-                        // ignoring
-                    }
+                if let " retryable" = sub_rule.as_str() {
+                    status_code.is_retryable = true;
                 }
             }
             _ => {
@@ -768,8 +738,8 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
                 wrapper.endpoint = current_endpoint.to_owned();
             }
             Rule::api_op => {
-                match parse_api_operation(api_sub_rule) {
-                    Some(definition) => match definition.0 {
+                if let Some(definition) = parse_api_operation(api_sub_rule) {
+                    match definition.0 {
                         HttpMethod::Get => {
                             wrapper.definition.get = Some(definition.1);
                         }
@@ -786,9 +756,6 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
                             wrapper.definition.patch = Some(definition.1);
                         }
                         _ => {}
-                    },
-                    None => {
-                        // ignore
                     }
                 }
             }
@@ -801,7 +768,7 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
 }
 
 fn normalize_parsed(source: &str) -> String {
-    let mut normalized = source.trim().clone().to_owned();
+    let mut normalized = source.trim().to_owned();
     let d_quote = "\"";
     if normalized.starts_with(d_quote) && normalized.ends_with(d_quote) {
         normalized.remove(normalized.len() - 1);
@@ -820,7 +787,7 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
         Rule::spec_items => {
             let mut n = String::new();
             for p in pair.into_inner() {
-                if n == "" {
+                if n.is_empty() {
                     n = p.as_str().to_owned();
                 }
                 let rule_name = p.as_str();
@@ -862,19 +829,9 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
         }
         Rule::status_codes => {
             for sc in pair.into_inner() {
-                match sc.as_rule() {
-                    Rule::status_code_desc => {
-                        match parse_status_code(sc) {
-                            Ok(status_code) => {
-                                project.status_codes.push(status_code);
-                            }
-                            Err(_) => {
-                                // ignoring invalid status code
-                            }
-                        }
-                    }
-                    _ => {
-                        // println!("ignoring status code rule: {:?}", sc);
+                if let Rule::status_code_desc = sc.as_rule() {
+                    if let Ok(status_code) = parse_status_code(sc) {
+                        project.status_codes.push(status_code);
                     }
                 }
             }
@@ -920,8 +877,8 @@ fn test_item_parser() {
 fn main() {
     let failure_icon = "🧟";
     let opt = Opt::from_args();
-    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-    println!("APIsh 🙊 v{}", VERSION);
+    let version = env!("CARGO_PKG_VERSION");
+    println!("APIsh 🙊 v{}", version);
     println!("Reading API from {}", opt.input);
     match Project::new_from_file(opt.input) {
         Ok(project) => {
