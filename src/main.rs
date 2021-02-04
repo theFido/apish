@@ -115,12 +115,21 @@ struct ProjectArgument {
 }
 
 #[derive(Debug, Serialize)]
+struct Example {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request: Option<Vec<u8>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response: Option<Vec<u8>>,
+}
+
+#[derive(Debug, Serialize)]
 struct Project {
     headers: Vec<ProjectArgument>,
     query: Vec<ProjectArgument>,
     params: Vec<ProjectArgument>,
     status_codes: Vec<StatusCode>,
     endpoints: HashMap<String, APIDefinition>,
+    examples: HashMap<String, Example>,
 }
 
 #[derive(Debug, Serialize)]
@@ -175,6 +184,7 @@ impl Project {
             params: vec![],
             status_codes: vec![],
             endpoints: HashMap::new(),
+            examples: HashMap::new(),
         }
     }
 
