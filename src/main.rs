@@ -1,3 +1,5 @@
+mod examples;
+
 extern crate structopt;
 #[macro_use]
 extern crate structopt_derive;
@@ -19,6 +21,7 @@ use pest::Parser;
 use structopt::StructOpt;
 
 use serde::Serialize;
+use crate::examples::Bag;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -53,10 +56,12 @@ struct Opt {
     input: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
+    #[structopt(short = "e", help = "Examples json file", default_value = "./example.json")]
+    examples: String,
     #[structopt(
-        short = "s",
-        help = "Spec output file (OpenAPI superset)",
-        default_value = "./api-spec.json"
+    short = "s",
+    help = "Spec output file (OpenAPI superset)",
+    default_value = "./api-spec.json"
     )]
     spec_output: String,
 }
@@ -88,6 +93,7 @@ struct APIEndpoint {
     status_codes: Vec<StatusCode>,
     produces: Vec<String>,
     consumes: Vec<String>,
+    example: Option<examples::Example>,
 }
 
 #[derive(Debug, Serialize)]
@@ -115,12 +121,21 @@ struct ProjectArgument {
 }
 
 #[derive(Debug, Serialize)]
+struct Example {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    request: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    response: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
 struct Project {
     headers: Vec<ProjectArgument>,
     query: Vec<ProjectArgument>,
     params: Vec<ProjectArgument>,
     status_codes: Vec<StatusCode>,
     endpoints: HashMap<String, APIDefinition>,
+    examples: HashMap<String, examples::Example>,
 }
 
 #[derive(Debug, Serialize)]
@@ -134,6 +149,7 @@ struct APIConfiguration {
     produces: Vec<String>,
     consumes: Vec<String>,
     use_cases: Vec<String>,
+    example: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -168,24 +184,28 @@ impl StatusCode {
 }
 
 impl Project {
-    fn new() -> Project {
+    fn new(examples: HashMap<String, examples::Example>) -> Project {
+
         Project {
             headers: vec![],
             query: vec![],
             params: vec![],
             status_codes: vec![],
             endpoints: HashMap::new(),
+            examples: examples,
         }
     }
 
-    fn new_from_file(file_name: String) -> Result<Project, String> {
+    fn new_from_file(file_name: String, examples_file: String) -> Result<Project, String> {
         let api_definition = get_file_content(file_name);
+        let bag = Bag::new_from_file(examples_file.as_str());
         match ApishParser::parse(Rule::api_file, &api_definition.as_ref()) {
             Ok(mut pairs) => {
                 let n = pairs.next();
                 match n {
                     Some(pair) => {
-                        let mut project = Project::new();
+                        let mut project = Project::new(bag.examples);
+
                         parse_value(pair, &mut project);
                         Ok(project)
                     }
@@ -328,6 +348,10 @@ impl APIEndpoint {
     ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
+                let mut ex : Option<examples::Example> = None;
+                if let Some(example) = project.examples.get(config.example.as_str()) {
+                    ex = Some(example.clone());
+                }
                 let endpoint = APIEndpoint {
                     description: config.description.to_owned(),
                     operation: config.operation.to_owned(),
@@ -338,6 +362,7 @@ impl APIEndpoint {
                     status_codes: project.get_status_codes(&config.status_codes),
                     produces: get_mime_types(&config.produces),
                     consumes: get_mime_types(&config.consumes),
+                    example: ex,
                 };
                 Some(endpoint)
             }
@@ -376,6 +401,22 @@ impl Clone for DataType {
             DataType::Number => DataType::Number,
             _ => DataType::Unknown,
         }
+    }
+}
+
+impl Clone for Example {
+    fn clone(&self) -> Self {
+        let mut copy = Example {
+            request: None,
+            response: None
+        };
+        if let Some(req) = &self.request {
+            copy.request = Some(req.clone());
+        }
+        if let Some(res) = &self.request {
+            copy.request = Some(res.clone());
+        }
+        copy
     }
 }
 
@@ -446,9 +487,9 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
         ("multipart".to_owned(), "multipart/form-data".to_owned()),
         ("binary".to_owned(), "application/octet-stream".to_owned()),
     ]
-    .iter()
-    .cloned()
-    .collect();
+        .iter()
+        .cloned()
+        .collect();
     for item in list {
         let trimmed = item.trim().to_owned();
         match mime_map.get(&trimmed) {
@@ -599,8 +640,8 @@ fn parse_status_code(pair: Pair<Rule>) -> Result<StatusCode, String> {
 
 fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration)> {
     let mut definition = APIConfiguration {
-        description: "".to_string(),
-        operation: "".to_string(),
+        description: String::new(),
+        operation: String::new(),
         query_string: vec![],
         path_params: vec![],
         headers: vec![],
@@ -608,6 +649,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
         produces: vec![],
         consumes: vec![],
         use_cases: vec![],
+        example: String::new(),
     };
     let mut current_method = HttpMethod::Unknown;
     for api_pair in pair.into_inner() {
@@ -677,6 +719,10 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                                                 definition
                                                     .consumes
                                                     .push(normalize_parsed(single_opt.as_str()));
+                                            }
+                                            "example" => {
+                                                definition.example= normalize_parsed(single_opt.as_str());
+
                                             }
                                             _ => {
                                                 // not place to attach
@@ -880,7 +926,7 @@ fn main() {
     let version = env!("CARGO_PKG_VERSION");
     println!("APIsh 🙊 v{}", version);
     println!("Reading API from {}", opt.input);
-    match Project::new_from_file(opt.input) {
+    match Project::new_from_file(opt.input, opt.examples) {
         Ok(project) => {
             let file = File::create(&opt.output).unwrap();
             serde_json::to_writer(file, &project).unwrap();
