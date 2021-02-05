@@ -1,5 +1,5 @@
 {
-    "example": {
+    "example_api_1": {
         "request": {
             "a": 1,
             "b": {

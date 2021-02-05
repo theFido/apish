@@ -37,7 +37,6 @@ status_codes:
 apis:
   /api/contact:
     get: "Returns all contact information"
-      operation: getContact
       headers: auth opt1
       produces: json
       query: filter
@@ -50,6 +49,7 @@ apis:
       produces: json
       consumes: json
       status_codes: 200
+      example: example_api_1
   /api/contact/{id}:
     get: "Something else"
         headers: opt1
@@ -66,6 +66,7 @@ ToDo:
 - [X] Comments
 - [X] Use cases
 - [X] Produces/consumes
+- [X] Examples:
 
 NFR ToDo:
 - [ ] Debug
