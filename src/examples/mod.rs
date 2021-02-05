@@ -46,15 +46,4 @@ impl Bag {
         }
         bag
     }
-
-    pub fn get_example(&self, example_name: &str) -> Option<Example> {
-        match self.examples.get(example_name) {
-            Some(ex) => {
-                Some(ex.clone())
-            }
-            None => {
-                None
-            }
-        }
-    }
 }

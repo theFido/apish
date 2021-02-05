@@ -121,14 +121,6 @@ struct ProjectArgument {
 }
 
 #[derive(Debug, Serialize)]
-struct Example {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    request: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    response: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
 struct Project {
     headers: Vec<ProjectArgument>,
     query: Vec<ProjectArgument>,
@@ -192,14 +184,17 @@ impl Project {
             params: vec![],
             status_codes: vec![],
             endpoints: HashMap::new(),
-            examples: examples,
+            examples,
         }
     }
 
     fn new_from_file(file_name: String, examples_file: String) -> Result<Project, String> {
         let api_definition = get_file_content(file_name);
+        if let Err(e) = api_definition {
+            return Err(e);
+        }
         let bag = Bag::new_from_file(examples_file.as_str());
-        match ApishParser::parse(Rule::api_file, &api_definition.as_ref()) {
+        match ApishParser::parse(Rule::api_file, &api_definition.unwrap().as_ref()) {
             Ok(mut pairs) => {
                 let n = pairs.next();
                 match n {
@@ -404,22 +399,6 @@ impl Clone for DataType {
     }
 }
 
-impl Clone for Example {
-    fn clone(&self) -> Self {
-        let mut copy = Example {
-            request: None,
-            response: None
-        };
-        if let Some(req) = &self.request {
-            copy.request = Some(req.clone());
-        }
-        if let Some(res) = &self.request {
-            copy.request = Some(res.clone());
-        }
-        copy
-    }
-}
-
 impl DataType {
     fn as_str(&self) -> &'static str {
         match *self {
@@ -504,12 +483,11 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
     mime_types
 }
 
-// ToDo: Return error
-fn get_file_content(file_name: String) -> String {
+fn get_file_content(file_name: String) -> Result<String, String> {
     match fs::read_to_string(file_name) {
-        Ok(content) => content,
-        _ => {
-            String::new()
+        Ok(content) => Ok(content),
+        Err(e) => {
+            Err(format!("{}", e))
         }
     }
 }
