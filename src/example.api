@@ -25,6 +25,7 @@ apis:
       produces: json
       consumes: json
       status_codes: 200
+      example: example_api_1
   /api/contact/{id}:
     get: "Something else"
         headers: opt1
