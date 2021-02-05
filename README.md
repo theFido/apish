@@ -66,7 +66,7 @@ ToDo:
 - [X] Comments
 - [X] Use cases
 - [X] Produces/consumes
-- [X] Examples:
+- [X] Example
 
 NFR ToDo:
 - [ ] Debug
