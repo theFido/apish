@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "apidesign"
+name = "apish"
 version = "0.3.0"
 dependencies = [
  "pest",
