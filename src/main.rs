@@ -20,8 +20,8 @@ use pest::Parser;
 
 use structopt::StructOpt;
 
-use serde::Serialize;
 use crate::examples::Bag;
+use serde::Serialize;
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -56,12 +56,16 @@ struct Opt {
     input: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
-    #[structopt(short = "e", help = "Examples json file", default_value = "./example.json")]
+    #[structopt(
+        short = "e",
+        help = "Examples json file",
+        default_value = "./example.json"
+    )]
     examples: String,
     #[structopt(
-    short = "s",
-    help = "Spec output file (OpenAPI superset)",
-    default_value = "./api-spec.json"
+        short = "s",
+        help = "Spec output file (OpenAPI superset)",
+        default_value = "./api-spec.json"
     )]
     spec_output: String,
 }
@@ -177,7 +181,6 @@ impl StatusCode {
 
 impl Project {
     fn new(examples: HashMap<String, examples::Example>) -> Project {
-
         Project {
             headers: vec![],
             query: vec![],
@@ -283,14 +286,19 @@ impl Project {
             "403" => Some(StatusCode::new(status_code, "Forbidden")),
             "404" => Some(StatusCode::new(status_code, "Not Found")),
             "405" => Some(StatusCode::new(status_code, "Method Not Allowed")),
+            "406" => Some(StatusCode::new(status_code, "Not Acceptable")),
             "408" => Some(StatusCode::new(status_code, "Request Timeout")),
             "413" => Some(StatusCode::new(status_code, "Payload Too Large")),
-            "415" => Some(StatusCode::new(
-                status_code,
-                "Unsupported Media Type",
-            )),
+            "415" => Some(StatusCode::new(status_code, "Unsupported Media Type")),
+            "417" => Some(StatusCode::new(status_code, "Expectation Failed")),
+            "418" => Some(StatusCode::new(status_code, "I'm a teapot")),
             "424" => Some(StatusCode::new(status_code, "Failed Dependency")),
             "429" => Some(StatusCode::new(status_code, "Too Many Requests")),
+            "500" => Some(StatusCode::new(status_code, "Internal Server Error")),
+            "501" => Some(StatusCode::new(status_code, "Not Implemented")),
+            "502" => Some(StatusCode::new(status_code, "Bad Gateway")),
+            "503" => Some(StatusCode::new(status_code, "Service Unavailable")),
+            "504" => Some(StatusCode::new(status_code, "Gateway Timeout")),
             _ => Some(StatusCode::new(status_code, "")),
         }
     }
@@ -343,7 +351,7 @@ impl APIEndpoint {
     ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
-                let mut ex : Option<examples::Example> = None;
+                let mut ex: Option<examples::Example> = None;
                 if let Some(example) = project.examples.get(config.example.as_str()) {
                     ex = Some(example.clone());
                 }
@@ -466,9 +474,9 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
         ("multipart".to_owned(), "multipart/form-data".to_owned()),
         ("binary".to_owned(), "application/octet-stream".to_owned()),
     ]
-        .iter()
-        .cloned()
-        .collect();
+    .iter()
+    .cloned()
+    .collect();
     for item in list {
         let trimmed = item.trim().to_owned();
         match mime_map.get(&trimmed) {
@@ -486,9 +494,7 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
 fn get_file_content(file_name: String) -> Result<String, String> {
     match fs::read_to_string(file_name) {
         Ok(content) => Ok(content),
-        Err(e) => {
-            Err(format!("{}", e))
-        }
+        Err(e) => Err(format!("{}", e)),
     }
 }
 
@@ -514,19 +520,16 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                             let mut value = String::new();
                             for k in opt.into_inner() {
                                 match k.as_rule() {
-                                    Rule::pair_modifiers => match k.as_str() {
-                                        "alias" => {
+                                    Rule::pair_modifiers => {
+                                        if k.as_str() == "alias" {
                                             key = PairModifiers::Alias;
                                         }
-                                        _ => {
-                                            println!("unk pair modifier {}", k.as_str());
-                                        }
-                                    },
+                                    }
                                     Rule::ident => {
                                         value = k.as_str().to_owned();
                                     }
                                     _ => {
-                                        println!("skipped mod_pair {}", k);
+                                        // println!("skipped mod_pair {}", k);
                                     }
                                 }
                             }
@@ -534,14 +537,11 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                                 arg.alias = value;
                             }
                         }
-                        Rule::single_modifiers => match opt.as_str() {
-                            "required" => {
+                        Rule::single_modifiers => {
+                            if opt.as_str() == "required" {
                                 arg.required = true;
                             }
-                            _ => {
-                                println!("Single modifier unknown: '{}'", opt.as_str());
-                            }
-                        },
+                        }
                         Rule::default_value => {
                             for dv_inner in opt.into_inner() {
                                 if let Rule::ident = dv_inner.as_rule() {
@@ -550,7 +550,7 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                             }
                         }
                         _ => {
-                            println!("skipped option {}", opt);
+                            // println!("skipped option {}", opt);
                         }
                     }
                 }
@@ -573,7 +573,7 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
                 }
             },
             _ => {
-                println!("missed case: {}", arg_pair);
+                // println!("missed case: {}", arg_pair);
             }
         }
     }
@@ -589,6 +589,7 @@ fn parse_project_arguments(pair: Pair<Rule>) -> Vec<ProjectArgument> {
     args
 }
 
+/// status_code rule parser
 fn parse_status_code(pair: Pair<Rule>) -> Result<StatusCode, String> {
     let mut status_code = StatusCode {
         code: "0".to_string(),
@@ -699,8 +700,8 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                                                     .push(normalize_parsed(single_opt.as_str()));
                                             }
                                             "example" => {
-                                                definition.example= normalize_parsed(single_opt.as_str());
-
+                                                definition.example =
+                                                    normalize_parsed(single_opt.as_str());
                                             }
                                             _ => {
                                                 // not place to attach
@@ -708,7 +709,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                                         }
                                     }
                                     _ => {
-                                        println!("ignoring unknown option {:?}", single_opt);
+                                        // println!("ignoring unknown option {:?}", single_opt);
                                     }
                                 }
                             }
@@ -725,7 +726,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
                             }
                         }
                         _ => {
-                            println!("ignoring param {:?}", param);
+                            // println!("ignoring param {:?}", param);
                         }
                     }
                 }
@@ -741,6 +742,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> Option<(HttpMethod, APIConfiguration
     Some((current_method, definition))
 }
 
+/// API rule parser
 fn parse_api(pair: Pair<Rule>) -> APIWrapper {
     let mut wrapper = APIWrapper {
         endpoint: "".to_string(),
@@ -784,13 +786,14 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
                 }
             }
             _ => {
-                println!("skipping {:?}", api_sub_rule);
+                // println!("skipping {:?}", api_sub_rule);
             }
         }
     }
     wrapper
 }
 
+/// Trims spaces and double quote characters from strings
 fn normalize_parsed(source: &str) -> String {
     let mut normalized = source.trim().to_owned();
     let d_quote = "\"";
@@ -801,6 +804,7 @@ fn normalize_parsed(source: &str) -> String {
     normalized
 }
 
+/// Parses the top level language keywords
 fn parse_value(pair: Pair<Rule>, project: &mut Project) {
     match pair.as_rule() {
         Rule::api_file => {
@@ -814,42 +818,22 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
                 if n.is_empty() {
                     n = p.as_str().to_owned();
                 }
-                let rule_name = p.as_str();
-                match rule_name {
+                let args = parse_project_arguments(p);
+                match n.as_str() {
                     "headers:" => {
-                        // ignore the rule name
+                        project.headers = args;
                     }
                     "params:" => {
-                        // ignore the rule name
+                        project.params = args;
                     }
                     "query:" => {
-                        // ignore the rule name
+                        project.query = args;
                     }
                     _ => {
-                        let args = parse_project_arguments(p);
-                        match n.as_str() {
-                            "headers:" => {
-                                project.headers = args;
-                            }
-                            "params:" => {
-                                project.params = args;
-                            }
-                            "query:" => {
-                                project.query = args;
-                            }
-                            _ => {
-                                println!("skipping rule option {}", n);
-                            }
-                        }
+                        // ignore the rest
                     }
                 }
             }
-        }
-        Rule::item_list => {
-            // println!("[top] item list! - {}", pair);
-        }
-        Rule::keyword => {
-            // println!("[top] keyword");
         }
         Rule::status_codes => {
             for sc in pair.into_inner() {

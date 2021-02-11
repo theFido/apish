@@ -3,6 +3,13 @@
 OpenAPI pre-processor heavily inspired by [Stylus](https://stylus-lang.com) and 
 [Sass](https://sass-lang.com).
 
+The `.api` file produces written with this DSL produces two artifacts:
+
+- `api.json` Is a JSON representation of the DSL, ideal to automate tasks like
+  code generation where you can also define common elements.
+- `api-spec.json` Is a JSON representation of each API composed with teh common 
+  elements, ideal to produce final documentation formats like OpenAPI.
+
 🙊 Proudly written in [Rust](https://www.rust-lang.org) 🦀.
 
 ## Motivation
@@ -63,6 +70,8 @@ ToDo:
 - [ ] Add imports
 - [X] Status codes
 - [ ] Groups
+- [ ] Produce postman
+- [ ] Links section
 - [X] Comments
 - [X] Use cases
 - [X] Produces/consumes

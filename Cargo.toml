@@ -1,5 +1,5 @@
 [package]
-name = "apidesign"
+name = "apish"
 version = "0.3.0"
 authors = ["Fido <fidencio.garrido@gmail.com>"]
 edition = "2018"
