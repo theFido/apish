@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.5.0]
+### Added
+- File watcher to continuously listen for changes in source file
+
 ## [0.4.0] - 2021-02-10
 ### Added
 - Tab character can be used for indentation
