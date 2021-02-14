@@ -72,6 +72,7 @@ ToDo:
 - [ ] Groups
 - [ ] Produce postman
 - [ ] Links section
+- [ ] JSON 5 - JSON with examples
 - [X] Comments
 - [X] Use cases
 - [X] Produces/consumes

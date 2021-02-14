@@ -16,6 +16,7 @@ apis:
       headers: auth opt1
       produces: json
       query: filter
+      operation: wolf
       status_codes: 401 424 200
       use_cases:
         "Does something"
