@@ -68,11 +68,13 @@ apis:
 
 ToDo:
 - [ ] Add imports
-- [X] Status codes
 - [ ] Groups
 - [ ] Produce postman
 - [ ] Links section
 - [ ] JSON 5 - JSON with examples
+- [ ] Plugins
+- [X] Status codes
+- [X] File watcher to monitor changes in source `api` file
 - [X] Comments
 - [X] Use cases
 - [X] Produces/consumes

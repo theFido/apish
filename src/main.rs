@@ -14,15 +14,22 @@ extern crate pest_derive;
 
 use std::collections::HashMap;
 use std::fs::File;
+use std::sync::mpsc::channel;
+use std::time::Duration;
 
 use crate::project::ProjectArgument;
 use serde::Serialize;
 use structopt::StructOpt;
 
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+
+use notify::DebouncedEvent::Write;
 use project::{APIConfiguration, APIDefinition, DataType, Project, StatusCode};
 
 #[derive(StructOpt)]
 struct Opt {
+    #[structopt(short = "w", help = "Keeps watching source API file changes")]
+    watch: bool,
     #[structopt(short = "f", help = "Input file")]
     input: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
@@ -210,25 +217,67 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
     mime_types
 }
 
-fn main() {
+fn produce_files(source: &str, examples_source: &str, output: &str, spec_output: &str) {
     let failure_icon = "🧟";
-    let opt = Opt::from_args();
-    let version = env!("CARGO_PKG_VERSION");
-    println!("APIsh 🙊 v{}\nReading API from {}", version, opt.input);
-    match Project::new_from_file(opt.input, opt.examples) {
+    match Project::new_from_file(source.to_string(), examples_source.to_string()) {
         Ok(project) => {
             // producing api.json
-            let file = File::create(&opt.output).unwrap();
+            let file = File::create(output).unwrap();
             serde_json::to_writer(file, &project).unwrap();
 
             // producing api-spec.json (from project)
             let api = API::new_project_spec(project);
-            let api_file = File::create(&opt.spec_output).unwrap();
+            let api_file = File::create(spec_output).unwrap();
             serde_json::to_writer(api_file, &api).unwrap();
-            println!("Generated {} and {}", opt.output, opt.spec_output);
+            println!("✅ Generated {} and {}", output, spec_output);
         }
         Err(e) => {
             println!("{} {}", failure_icon, e);
         }
+    }
+}
+
+fn watch(
+    source: &str,
+    examples_source: &str,
+    output: &str,
+    spec_output: &str,
+) -> notify::Result<()> {
+    let (tx, rx) = channel();
+    let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1))?;
+    watcher.watch(source, RecursiveMode::NonRecursive)?;
+    loop {
+        match rx.recv() {
+            Ok(event) => {
+                if let Write(_) = event {
+                    produce_files(source, examples_source, output, spec_output);
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+}
+
+fn main() {
+    let opt = Opt::from_args();
+    let version = env!("CARGO_PKG_VERSION");
+    println!("APIsh 🙊 v{}\nReading API from {}", version, opt.input);
+    if opt.watch {
+        println!("Listening for changes in {} file", opt.input);
+        if let Err(e) = watch(
+            opt.input.as_ref(),
+            opt.examples.as_ref(),
+            opt.output.as_ref(),
+            opt.spec_output.as_ref(),
+        ) {
+            println!("Error listening: {:?}", e);
+        }
+    } else {
+        produce_files(
+            opt.input.as_ref(),
+            opt.examples.as_ref(),
+            opt.output.as_ref(),
+            opt.spec_output.as_ref(),
+        );
     }
 }
