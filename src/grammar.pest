@@ -59,13 +59,15 @@ api_single_keyword = { "headers" | "params" | "query" | "produces" | "consumes" 
 
 http_verb = { "get" | "post" | "put" | "delete" | "patch" }
 
-word_list = { space+ ~ ident }
+word_list = { space+ ~ (group_reference | ident ) }
 
+// single use tokens
 FINAL_ITEM = { NEWLINE | EOI }
+group_reference = { "g(" ~ ident ~ ")" }
 
 api_use_case = { space+ ~ string* ~ FINAL_ITEM }
 api_use_cases = { space+ ~ "use_cases:" ~ NEWLINE ~ api_use_case* }
-api_single_option = { space+ ~ api_single_keyword ~ kwd_delimiter ~ word_list* ~ FINAL_ITEM}
+api_single_option = { space+ ~ api_single_keyword ~ kwd_delimiter ~ word_list* ~ FINAL_ITEM }
 api_status_codes = { space+ ~ "status_codes" ~ kwd_delimiter ~ word_list+ ~ FINAL_ITEM }
 api_operation = { space+ ~ "operation" ~ kwd_delimiter ~ space+ ~ ident ~ FINAL_ITEM }
 api_params = { api_single_option | api_use_cases | api_status_codes | api_operation }
@@ -85,4 +87,8 @@ status_code_n = { ASCII_DIGIT* }
 status_code_desc = { space+ ~ status_code_n ~ status_codes_options* ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
 status_codes = { status_codes_kwd ~ status_code_desc* }
 
-api_file = { SOI ~ spec_items* ~ status_codes* ~ irrelevant* ~ apis ~ EOI }
+common_groups_kwd = { "headers_groups" | "params_groups" | "query_groups" | "status_codes_groups"}
+common_groups_item = { space+ ~ ident ~ kwd_delimiter ~ word_list* ~ NEWLINE }
+common_groups_def = { common_groups_kwd ~ kwd_delimiter ~ NEWLINE ~ common_groups_item* }
+
+api_file = { SOI ~ spec_items* ~ status_codes* ~ common_groups_def* ~ irrelevant* ~ apis ~ EOI }

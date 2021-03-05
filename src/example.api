@@ -1,13 +1,20 @@
 headers:
   x-my-auth string alias auth required: "It does something"
+  x-auth-two string alias auth2: "Other auth option"
   x-my-optional string alias opt1 (i_am_optional): "If present, something will happen"
 params:
   id string: "Unique identifier"
 query:
   filter string: "Possible values name date"
+  offset number: "Page offset"
 status_codes:
   401: "Token not provided"
   424 retryable: "Temporary failure"
+headers_groups:
+  allAuth: auth auth2
+  other: auth
+query_groups:
+  paging: filter offset
 
 // starting api
 apis:
@@ -15,14 +22,14 @@ apis:
     get: "Returns all contact information"
       headers: auth opt1
       produces: json
-      query: filter
+      query: g(paging)
       operation: wolf
-      status_codes: 401 424 200
+      status_codes: 401 424 200 201
       use_cases:
         "Does something"
         "Does something else"
     post: "Creates a new contact entry"
-      headers: auth
+      headers: g(allAuth) opt1
       produces: json
       consumes: json
       status_codes: 200

@@ -2,6 +2,8 @@
 
 ## [0.6.0]
 ### Added
+- Extending language to support groups for: headers, parameters, query strings
+  and status codes
 - `.api` File does not require return character at the end
 ### Fixed
 - Blank status codes in `api.json`

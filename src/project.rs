@@ -75,7 +75,17 @@ pub struct ProjectArgument {
 }
 
 #[derive(Debug, Serialize)]
+struct ArgumentGroup {
+    id: String,
+    items: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
 pub struct Project {
+    headers_groups: Vec<ArgumentGroup>,
+    params_groups: Vec<ArgumentGroup>,
+    query_groups: Vec<ArgumentGroup>,
+    status_codes_groups: Vec<ArgumentGroup>,
     pub headers: Vec<ProjectArgument>,
     pub query: Vec<ProjectArgument>,
     pub params: Vec<ProjectArgument>,
@@ -156,6 +166,10 @@ impl PartialEq for ProjectArgument {
 impl Project {
     fn new(examples: HashMap<String, examples::Example>) -> Project {
         Project {
+            headers_groups: vec![],
+            params_groups: vec![],
+            query_groups: vec![],
+            status_codes_groups: vec![],
             headers: vec![],
             query: vec![],
             params: vec![],
@@ -296,6 +310,32 @@ impl Project {
         }
         codes
     }
+
+    /// Return the individual items referenced by a group ID
+    fn spread_group(&self, section: &str, group_name: &str) -> Vec<String> {
+        let mut items = Vec::new();
+        let optional_source = match section {
+            "headers" => Some(&self.headers_groups),
+            "params" => Some(&self.params_groups),
+            "query" => Some(&self.query_groups),
+            "status_codes" => Some(&self.status_codes_groups),
+            _ => {
+                // ignore
+                println!("{}", section);
+                None
+            }
+        };
+        if let Some(source) = optional_source {
+            for item in source {
+                if item.id == group_name {
+                    for alias in &item.items {
+                        items.push(alias.to_owned());
+                    }
+                }
+            }
+        }
+        items
+    }
 }
 
 impl ProjectArgument {
@@ -400,6 +440,31 @@ fn parse_argument(pair: Pair<Rule>) -> ProjectArgument {
     arg
 }
 
+fn parse_group(pair: Pair<Rule>) -> ArgumentGroup {
+    let mut arg_group = ArgumentGroup {
+        id: "".to_string(),
+        items: vec![],
+    };
+    let mut items = Vec::new();
+    for inner_pair in pair.into_inner() {
+        match inner_pair.as_rule() {
+            Rule::ident => {
+                arg_group.id = inner_pair.as_str().to_owned();
+            }
+            Rule::word_list => {
+                for identifier in inner_pair.into_inner() {
+                    items.push(identifier.as_str().to_owned());
+                }
+            }
+            _ => {
+                // ignore
+            }
+        }
+    }
+    arg_group.items = items;
+    arg_group
+}
+
 fn parse_project_arguments(pair: Pair<Rule>) -> Vec<ProjectArgument> {
     let mut args = Vec::new();
     for inner_pair in pair.into_inner() {
@@ -444,7 +509,7 @@ fn parse_status_code(pair: Pair<Rule>) -> StatusCode {
     status_code
 }
 
-fn parse_api_operation(pair: Pair<Rule>) -> (HttpMethod, APIConfiguration) {
+fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIConfiguration) {
     let mut definition = APIConfiguration {
         description: String::new(),
         operation: String::new(),
@@ -500,35 +565,59 @@ fn parse_api_operation(pair: Pair<Rule>) -> (HttpMethod, APIConfiguration) {
                                         current_keyword = single_opt.as_str();
                                     }
                                     Rule::word_list => {
+                                        let mut definitions = Vec::new();
+                                        let inner_text = single_opt.as_str();
+                                        for param_value in single_opt.into_inner() {
+                                            match param_value.as_rule() {
+                                                Rule::ident => {
+                                                    definitions.push(normalize_parsed(
+                                                        param_value.as_str(),
+                                                    ));
+                                                }
+                                                Rule::group_reference => {
+                                                    // parse
+                                                    // needs an array of string, of all elements contained in group
+                                                    let name = param_value.into_inner().as_str();
+                                                    let values =
+                                                        project.spread_group(current_keyword, name);
+                                                    for v in values {
+                                                        definitions
+                                                            .push(normalize_parsed(v.as_str()));
+                                                    }
+                                                }
+                                                _ => {
+                                                    // ignore
+                                                }
+                                            }
+                                        }
                                         match current_keyword {
                                             "params" => {
-                                                definition
-                                                    .path_params
-                                                    .push(normalize_parsed(single_opt.as_str()));
+                                                for def in definitions {
+                                                    definition.path_params.push(def);
+                                                }
                                             }
                                             "query" => {
-                                                definition
-                                                    .query_string
-                                                    .push(normalize_parsed(single_opt.as_str()));
+                                                for def in definitions {
+                                                    definition.query_string.push(def);
+                                                }
                                             }
                                             "headers" => {
-                                                definition
-                                                    .headers
-                                                    .push(normalize_parsed(single_opt.as_str()));
+                                                for def in definitions {
+                                                    definition.headers.push(def);
+                                                }
                                             }
                                             "produces" => {
-                                                definition
-                                                    .produces
-                                                    .push(normalize_parsed(single_opt.as_str()));
+                                                for def in definitions {
+                                                    definition.produces.push(def);
+                                                }
                                             }
                                             "consumes" => {
-                                                definition
-                                                    .consumes
-                                                    .push(normalize_parsed(single_opt.as_str()));
+                                                for def in definitions {
+                                                    definition.consumes.push(def);
+                                                }
                                             }
                                             "example" => {
-                                                definition.example =
-                                                    normalize_parsed(single_opt.as_str());
+                                                definition.example = normalize_parsed(inner_text);
                                             }
                                             _ => {
                                                 // not place to attach
@@ -549,7 +638,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> (HttpMethod, APIConfiguration) {
                         Rule::api_status_codes => {
                             for status in param.into_inner() {
                                 let code = normalize_parsed(status.as_str());
-                                if code != "" {
+                                if !code.is_empty() {
                                     definition.status_codes.push(code);
                                 }
                             }
@@ -572,7 +661,7 @@ fn parse_api_operation(pair: Pair<Rule>) -> (HttpMethod, APIConfiguration) {
 }
 
 /// API rule parser
-fn parse_api(pair: Pair<Rule>) -> APIWrapper {
+fn parse_api(pair: Pair<Rule>, project: &Project) -> APIWrapper {
     let mut wrapper = APIWrapper {
         endpoint: "".to_string(),
         definition: APIDefinition {
@@ -593,7 +682,7 @@ fn parse_api(pair: Pair<Rule>) -> APIWrapper {
                 wrapper.endpoint = current_endpoint.to_owned();
             }
             Rule::api_op => {
-                let definition = parse_api_operation(api_sub_rule);
+                let definition = parse_api_operation(api_sub_rule, project);
                 match definition.0 {
                     HttpMethod::Get => {
                         wrapper.definition.get = Some(definition.1);
@@ -672,10 +761,39 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
         }
         Rule::apis => {
             for api in pair.into_inner() {
-                let wrapped_api = parse_api(api);
+                let wrapped_api = parse_api(api, project);
                 project
                     .endpoints
                     .insert(wrapped_api.endpoint, wrapped_api.definition);
+            }
+        }
+        Rule::common_groups_def => {
+            let placeholder = "unk";
+            let mut target = placeholder;
+            let mut args = Vec::new();
+            for it in pair.into_inner() {
+                if target == placeholder {
+                    target = it.as_str();
+                    continue;
+                }
+                args.push(parse_group(it));
+            }
+            match target {
+                "headers_groups" => {
+                    project.headers_groups = args;
+                }
+                "params_groups" => {
+                    project.params_groups = args;
+                }
+                "query_groups" => {
+                    project.query_groups = args;
+                }
+                "status_codes_groups" => {
+                    project.status_codes_groups = args;
+                }
+                _ => {
+                    // ignoring target
+                }
             }
         }
         _ => {

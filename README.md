@@ -7,7 +7,7 @@ The `.api` file produces written with this DSL produces two artifacts:
 
 - `api.json` Is a JSON representation of the DSL, ideal to automate tasks like
   code generation where you can also define common elements.
-- `api-spec.json` Is a JSON representation of each API composed with teh common 
+- `api-spec.json` Is a JSON representation of each API composed with the common 
   elements, ideal to produce final documentation formats like OpenAPI.
 
 🙊 Proudly written in [Rust](https://www.rust-lang.org) 🦀.
@@ -31,14 +31,21 @@ Example (example.api):
 ```
 headers:
   x-my-auth string alias auth required: "It does something"
+  x-auth-two string alias auth2: "Other auth option"
   x-my-optional string alias opt1 (i_am_optional): "If present, something will happen"
 params:
   id string: "Unique identifier"
 query:
   filter string: "Possible values name date"
+  offset number: "Page offset"
 status_codes:
   401: "Token not provided"
   424 retryable: "Temporary failure"
+headers_groups:
+  allAuth: auth auth2
+  other: auth
+query_groups:
+  paging: filter offset
 
 // starting api
 apis:
@@ -46,13 +53,14 @@ apis:
     get: "Returns all contact information"
       headers: auth opt1
       produces: json
-      query: filter
-      status_codes: 401 424 200
+      query: g(paging)
+      operation: wolf
+      status_codes: 401 424 200 201
       use_cases:
         "Does something"
         "Does something else"
     post: "Creates a new contact entry"
-      headers: auth
+      headers: g(allAuth) opt1
       produces: json
       consumes: json
       status_codes: 200
@@ -63,16 +71,17 @@ apis:
         params: id
         produces: json
         status_codes: 200
-
 ```
 
 ToDo:
 - [ ] Add imports
-- [ ] Groups
+- [X] Groups
 - [ ] Produce postman
 - [ ] Links section
 - [ ] JSON 5 - JSON with examples
 - [ ] Plugins
+- [ ] Swagger
+- [ ] Grammar documentation 
 - [X] Status codes
 - [X] File watcher to monitor changes in source `api` file
 - [X] Comments
