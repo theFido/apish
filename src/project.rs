@@ -549,7 +549,9 @@ fn parse_api_operation(pair: Pair<Rule>) -> (HttpMethod, APIConfiguration) {
                         Rule::api_status_codes => {
                             for status in param.into_inner() {
                                 let code = normalize_parsed(status.as_str());
-                                definition.status_codes.push(code);
+                                if code != "" {
+                                    definition.status_codes.push(code);
+                                }
                             }
                         }
                         _ => {

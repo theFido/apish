@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.0]
+### Added
+- `.api` File does not require return character at the end
+### Fixed
+- Blank status codes in `api.json`
+
 ## [0.5.0]
 ### Added
 - File watcher to continuously listen for changes in source file
