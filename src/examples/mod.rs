@@ -6,18 +6,20 @@ use serde_json::Value;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Example {
+    description: Option<String>,
     request: Option<Value>,
     response: Option<Value>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct Bag {
-    pub examples: HashMap<String, Example>,
+    pub examples: HashMap<String, Vec<Example>>,
 }
 
 impl Clone for Example {
     fn clone(&self) -> Self {
         Example {
+            description: self.description.clone(),
             request: self.request.clone(),
             response: self.response.clone(),
         }

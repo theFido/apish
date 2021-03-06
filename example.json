@@ -1,10 +1,26 @@
 {
-    "example_api_1": {
-        "request": {
-            "a": 1,
-            "b": {
-                "name": "fido"
-            }
+  "example_api_1": [
+    {
+      "description": "Some case when we call this way",
+      "request": {
+        "a": 1,
+        "b": {
+          "name": "fido"
         }
+      }
+    },
+    {
+      "description": "Some case when we call in a different way",
+      "request": {
+        "a": 2,
+        "responseRequired": true,
+        "b": {
+          "name": "fido"
+        }
+      },
+      "response": {
+        "message": "all cool"
+      }
     }
+  ]
 }
