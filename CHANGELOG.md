@@ -1,7 +1,8 @@
 # Changelog
 
-## [0.6.0]
+## [0.6.0] - 2021-03-06
 ### Added
+- Extending language to support `tags` list attribute for api operations 
 - Extending language to support groups for: headers, parameters, query strings
   and status codes
 - Examples for APIs are an array to allow multiple entries

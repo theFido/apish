@@ -74,7 +74,6 @@ apis:
 ```
 
 ToDo:
-- [ ] Tags/keywords
 - [ ] Add imports
 - [ ] Produce postman
 - [ ] Links section
@@ -82,6 +81,7 @@ ToDo:
 - [ ] Plugins
 - [ ] Swagger
 - [ ] Grammar documentation
+- [X] Tags/keywords
 - [X] Multiple examples
 - [X] Groups
 - [X] Status codes

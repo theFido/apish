@@ -55,7 +55,7 @@ path_token = { "/" | path_id }
 
 sub_path = { path_token+ ~ ident* }
 
-api_single_keyword = { "headers" | "params" | "query" | "produces" | "consumes" | "example" }
+api_single_keyword = { "headers" | "params" | "query" | "produces" | "consumes" | "example" | "tags" }
 
 http_verb = { "get" | "post" | "put" | "delete" | "patch" }
 
