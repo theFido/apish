@@ -25,6 +25,7 @@ apis:
       query: g(paging)
       operation: wolf
       status_codes: 401 424 200 201
+      tags: public demo
       use_cases:
         "Does something"
         "Does something else"

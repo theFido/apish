@@ -101,6 +101,7 @@ pub struct APIConfiguration {
     pub query_string: Vec<String>,
     pub path_params: Vec<String>,
     pub headers: Vec<String>,
+    pub tags: Vec<String>,
     pub status_codes: Vec<String>,
     pub produces: Vec<String>,
     pub consumes: Vec<String>,
@@ -516,6 +517,7 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
         query_string: vec![],
         path_params: vec![],
         headers: vec![],
+        tags: vec![],
         status_codes: vec![],
         produces: vec![],
         consumes: vec![],
@@ -604,6 +606,11 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                                             "headers" => {
                                                 for def in definitions {
                                                     definition.headers.push(def);
+                                                }
+                                            }
+                                            "tags" => {
+                                                for def in definitions {
+                                                    definition.tags.push(def);
                                                 }
                                             }
                                             "produces" => {
