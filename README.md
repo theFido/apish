@@ -74,14 +74,16 @@ apis:
 ```
 
 ToDo:
+- [ ] Tags/keywords
 - [ ] Add imports
-- [X] Groups
 - [ ] Produce postman
 - [ ] Links section
 - [ ] JSON 5 - JSON with examples
 - [ ] Plugins
 - [ ] Swagger
-- [ ] Grammar documentation 
+- [ ] Grammar documentation
+- [X] Multiple examples
+- [X] Groups
 - [X] Status codes
 - [X] File watcher to monitor changes in source `api` file
 - [X] Comments

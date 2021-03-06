@@ -91,7 +91,7 @@ pub struct Project {
     pub params: Vec<ProjectArgument>,
     pub status_codes: Vec<StatusCode>,
     pub endpoints: HashMap<String, APIDefinition>,
-    pub examples: HashMap<String, examples::Example>,
+    pub examples: HashMap<String, Vec<examples::Example>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -164,7 +164,7 @@ impl PartialEq for ProjectArgument {
 }
 
 impl Project {
-    fn new(examples: HashMap<String, examples::Example>) -> Project {
+    fn new(examples: HashMap<String, Vec<examples::Example>>) -> Project {
         Project {
             headers_groups: vec![],
             params_groups: vec![],
@@ -653,7 +653,7 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                 definition.description = normalize_parsed(api_pair.as_str());
             }
             _ => {
-                println!("ignoring {:?}", api_pair);
+                // println!("ignoring {:?}", api_pair);
             }
         }
     }

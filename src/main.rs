@@ -68,7 +68,7 @@ struct APIEndpoint {
     status_codes: Vec<StatusCode>,
     produces: Vec<String>,
     consumes: Vec<String>,
-    example: Option<examples::Example>,
+    example: Option<Vec<examples::Example>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -133,7 +133,7 @@ impl APIEndpoint {
     ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
-                let mut ex: Option<examples::Example> = None;
+                let mut ex: Option<Vec<examples::Example>> = None;
                 if let Some(example) = project.examples.get(config.example.as_str()) {
                     ex = Some(example.clone());
                 }
