@@ -1,4 +1,5 @@
 mod examples;
+mod open_api;
 mod project;
 
 extern crate structopt;
@@ -34,6 +35,12 @@ struct Opt {
     input: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
+    #[structopt(
+        short = "a",
+        help = "Open API spec file",
+        default_value = "./openapi.json"
+    )]
+    open_api: String,
     #[structopt(
         short = "e",
         help = "Examples json file",
@@ -173,7 +180,7 @@ impl API {
         }
     }
 
-    fn new_project_spec(project: Project) -> HashMap<String, API> {
+    fn new_project_spec(project: &Project) -> HashMap<String, API> {
         let mut api = HashMap::new();
         for endpoint in &project.endpoints {
             let api_path = endpoint.0.to_owned();
@@ -184,7 +191,7 @@ impl API {
     }
 }
 
-fn get_mime_types(list: &[String]) -> Vec<String> {
+pub fn get_mime_types(list: &[String]) -> Vec<String> {
     let mut mime_types = Vec::new();
     let mime_map: HashMap<String, String> = [
         ("json".to_owned(), "application/json".to_owned()),
@@ -219,7 +226,13 @@ fn get_mime_types(list: &[String]) -> Vec<String> {
     mime_types
 }
 
-fn produce_files(source: &str, examples_source: &str, output: &str, spec_output: &str) {
+fn produce_files(
+    source: &str,
+    examples_source: &str,
+    output: &str,
+    spec_output: &str,
+    open_api_output: &str,
+) {
     let failure_icon = "🧟";
     match Project::new_from_file(source.to_string(), examples_source.to_string()) {
         Ok(project) => {
@@ -228,10 +241,18 @@ fn produce_files(source: &str, examples_source: &str, output: &str, spec_output:
             serde_json::to_writer(file, &project).unwrap();
 
             // producing api-spec.json (from project)
-            let api = API::new_project_spec(project);
+            let api = API::new_project_spec(&project);
             let api_file = File::create(spec_output).unwrap();
             serde_json::to_writer(api_file, &api).unwrap();
-            println!("✅ Generated {} and {}", output, spec_output);
+
+            // producing openapi.json
+            let open_api = open_api::OpenAPI::new_from_project_spec(&project);
+            let open_api_file = File::create(open_api_output).unwrap();
+            serde_json::to_writer(open_api_file, &open_api).unwrap();
+            println!(
+                "✅ Generated {}, {}, and {}",
+                output, spec_output, open_api_output
+            );
         }
         Err(e) => {
             println!("{} {}", failure_icon, e);
@@ -244,6 +265,7 @@ fn watch(
     examples_source: &str,
     output: &str,
     spec_output: &str,
+    open_api: &str,
 ) -> notify::Result<()> {
     let (tx, rx) = channel();
     let mut watcher: RecommendedWatcher = Watcher::new(tx, Duration::from_secs(1))?;
@@ -252,7 +274,7 @@ fn watch(
         match rx.recv() {
             Ok(event) => {
                 if let Write(_) = event {
-                    produce_files(source, examples_source, output, spec_output);
+                    produce_files(source, examples_source, output, spec_output, open_api);
                 }
             }
             Err(e) => println!("{:?}", e),
@@ -271,6 +293,7 @@ fn main() {
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),
+            opt.open_api.as_ref(),
         ) {
             println!("Error listening: {:?}", e);
         }
@@ -280,6 +303,7 @@ fn main() {
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),
+            opt.open_api.as_ref(),
         );
     }
 }

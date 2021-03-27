@@ -59,9 +59,9 @@ pub enum DataType {
 
 #[derive(Debug, Serialize)]
 pub struct StatusCode {
-    code: String,
-    description: String,
-    is_retryable: bool,
+    pub code: String,
+    pub description: String,
+    pub is_retryable: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -121,7 +121,7 @@ impl Clone for DataType {
 }
 
 impl DataType {
-    fn as_str(&self) -> &'static str {
+    pub fn as_str(&self) -> &'static str {
         match *self {
             DataType::String => "string",
             DataType::Number => "number",
@@ -639,7 +639,10 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                         }
                         Rule::api_operation => {
                             for op in param.into_inner() {
-                                definition.operation = normalize_parsed(op.as_str());
+                                let normalized = normalize_parsed(op.as_str());
+                                if !normalized.is_empty() {
+                                    definition.operation = normalized;
+                                }
                             }
                         }
                         Rule::api_status_codes => {
