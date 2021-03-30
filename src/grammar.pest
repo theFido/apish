@@ -43,6 +43,10 @@ item = { space+ ~ ident ~ space ~ data_type ~ options* ~ space* ~ kwd_delimiter 
 
 item_list = { item* }
 
+spec_header_title = { "title" ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
+spec_header_version = { "version" ~ kwd_delimiter ~ space* ~ string* ~ NEWLINE }
+spec_header = { spec_header_title?  ~ spec_header_version? }
+
 spec_item = _{ option ~ NEWLINE }
 
 spec_items = { spec_item ~ item_list }
@@ -91,4 +95,4 @@ common_groups_kwd = { "headers_groups" | "params_groups" | "query_groups" | "sta
 common_groups_item = { space+ ~ ident ~ kwd_delimiter ~ word_list* ~ NEWLINE }
 common_groups_def = { common_groups_kwd ~ kwd_delimiter ~ NEWLINE ~ common_groups_item* }
 
-api_file = { SOI ~ spec_items* ~ status_codes* ~ common_groups_def* ~ irrelevant* ~ apis ~ EOI }
+api_file = { SOI ~ spec_header ~ irrelevant* ~ spec_items* ~ irrelevant* ~ status_codes* ~ common_groups_def* ~ irrelevant* ~ apis ~ EOI }

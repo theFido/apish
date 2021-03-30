@@ -82,6 +82,8 @@ struct ArgumentGroup {
 
 #[derive(Debug, Serialize)]
 pub struct Project {
+    pub title: String,
+    pub version: String,
     headers_groups: Vec<ArgumentGroup>,
     params_groups: Vec<ArgumentGroup>,
     query_groups: Vec<ArgumentGroup>,
@@ -125,7 +127,7 @@ impl DataType {
         match *self {
             DataType::String => "string",
             DataType::Number => "number",
-            DataType::Boolean => "bool",
+            DataType::Boolean => "boolean",
             DataType::Unknown => "unk",
         }
     }
@@ -167,6 +169,8 @@ impl PartialEq for ProjectArgument {
 impl Project {
     fn new(examples: HashMap<String, Vec<examples::Example>>) -> Project {
         Project {
+            title: "".to_string(),
+            version: "".to_string(),
             headers_groups: vec![],
             params_groups: vec![],
             query_groups: vec![],
@@ -738,6 +742,23 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
             pair.into_inner().for_each(|local_pair| {
                 parse_value(local_pair, project);
             });
+        }
+        Rule::spec_header => {
+            for p in pair.into_inner() {
+                match p.as_rule() {
+                    Rule::spec_header_title => {
+                        let title = normalize_parsed(p.into_inner().as_str());
+                        project.title = title;
+                    }
+                    Rule::spec_header_version => {
+                        let version = normalize_parsed(p.into_inner().as_str());
+                        project.version = version;
+                    }
+                    _ => {
+                        // println!("ignoring sub rule {:?}", p);
+                    }
+                }
+            }
         }
         Rule::spec_items => {
             let mut n = String::new();

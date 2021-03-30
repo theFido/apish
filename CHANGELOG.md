@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.0] - 2021-03-30
+### Added
+- Support for keywords: `title` and `version` in `.api` file
+- Basic swagger generation (`openapi.json`)
+
 ## [0.6.0] - 2021-03-06
 ### Added
 - Extending language to support `tags` list attribute for api operations 

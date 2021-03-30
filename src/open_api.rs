@@ -180,8 +180,8 @@ impl OpenAPI {
         OpenAPI {
             openapi: "3.0.3".to_string(),
             info: InfoSpec {
-                title: "Open Example".to_string(),
-                version: "1.0.0".to_string(),
+                title: project.title.to_owned(),
+                version: project.version.to_owned(),
             },
             paths: get_paths_from_project(&project),
         }
