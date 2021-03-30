@@ -80,6 +80,13 @@ struct APIEndpoint {
 }
 
 #[derive(Debug, Serialize)]
+struct APISpec {
+    title: String,
+    version: String,
+    spec: HashMap<String, API>,
+}
+
+#[derive(Debug, Serialize)]
 struct API {
     #[serde(skip_serializing_if = "Option::is_none")]
     get: Option<APIEndpoint>,
@@ -180,14 +187,18 @@ impl API {
         }
     }
 
-    fn new_project_spec(project: &Project) -> HashMap<String, API> {
+    fn new_project_spec(project: &Project) -> APISpec {
         let mut api = HashMap::new();
         for endpoint in &project.endpoints {
             let api_path = endpoint.0.to_owned();
             let api_def = API::new_from_api_definition(&endpoint.1, &project);
             api.insert(api_path, api_def);
         }
-        api
+        APISpec {
+            title: project.title.to_owned(),
+            version: project.version.to_owned(),
+            spec: api,
+        }
     }
 }
 

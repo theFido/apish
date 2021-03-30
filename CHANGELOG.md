@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.1] - 2021-03-30
+### Fixed
+- Title and version available in `api-spec.json` files too
+
 ## [0.7.0] - 2021-03-30
 ### Added
 - Support for keywords: `title` and `version` in `.api` file
