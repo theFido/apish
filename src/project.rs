@@ -650,12 +650,39 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                             }
                         }
                         Rule::api_status_codes => {
-                            for status in param.into_inner() {
-                                let code = normalize_parsed(status.as_str());
-                                if !code.is_empty() {
-                                    definition.status_codes.push(code);
+                            // parse group
+                            for inner in param.into_inner() {
+                                match inner.as_rule() {
+                                    Rule::word_list => {
+                                        for status_component in inner.into_inner() {
+                                            match status_component.as_rule() {
+                                                Rule::ident => {
+                                                    let code = normalize_parsed(status_component.as_str());
+                                                    if !code.is_empty() {
+                                                        definition.status_codes.push(code);
+                                                    }
+                                                },
+                                                Rule::group_reference => {
+                                                    let name = status_component.into_inner().as_str();
+                                                    let values =
+                                                        project.spread_group("status_codes", name);
+                                                    for v in values {
+                                                        definition.status_codes
+                                                            .push(normalize_parsed(v.as_str()));
+                                                    }
+                                                },
+                                                _ => {
+                                                //
+                                                }
+                                            }
+                                        }
+                                    },
+                                    _ => {
+
+                                    }
                                 }
                             }
+
                         }
                         _ => {
                             // println!("ignoring param {:?}", param);
