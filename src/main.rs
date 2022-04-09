@@ -10,12 +10,15 @@ extern crate structopt_derive;
 extern crate serde;
 extern crate serde_json;
 
+use serde_json::Value;
+
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
 use std::collections::HashMap;
 use std::fs::File;
+use std::ops::Deref;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 
@@ -27,6 +30,7 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
 use notify::DebouncedEvent::Write;
 use project::{APIConfiguration, APIDefinition, DataType, Project, StatusCode};
+use crate::models::{Entity, Enum, ProjectModel};
 
 #[derive(StructOpt)]
 struct Opt {
@@ -34,26 +38,26 @@ struct Opt {
     watch: bool,
     #[structopt(short = "f", help = "Input file")]
     input: String,
-    #[structopt(short = "m", help = "Input models file", default_value="./models.model")]
+    #[structopt(short = "m", help = "Input models file", default_value = "./models.model")]
     models_file: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
     #[structopt(
-        short = "a",
-        help = "Open API spec file",
-        default_value = "./openapi.json"
+    short = "a",
+    help = "Open API spec file",
+    default_value = "./openapi.json"
     )]
     open_api: String,
     #[structopt(
-        short = "e",
-        help = "Examples json file",
-        default_value = "./example.json"
+    short = "e",
+    help = "Examples json file",
+    default_value = "./example.json"
     )]
     examples: String,
     #[structopt(
-        short = "s",
-        help = "Spec output file (OpenAPI superset)",
-        default_value = "./api-spec.json"
+    short = "s",
+    help = "Spec output file (OpenAPI superset)",
+    default_value = "./api-spec.json"
     )]
     spec_output: String,
 }
@@ -80,6 +84,10 @@ struct APIEndpoint {
     produces: Vec<String>,
     consumes: Vec<String>,
     example: Option<Vec<examples::Example>>,
+    request_object: Option<Entity>,
+    request_enum: Option<Enum>,
+    response_object: Option<Entity>,
+    response_enum: Option<Enum>,
 }
 
 #[derive(Debug, Serialize)]
@@ -87,6 +95,7 @@ struct APISpec {
     title: String,
     version: String,
     spec: HashMap<String, API>,
+    models: Option<ProjectModel>,
 }
 
 #[derive(Debug, Serialize)]
@@ -151,9 +160,32 @@ impl APIEndpoint {
     ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
+                let mut request: Option<Entity> = None;
+                let mut request_enum: Option<Enum> = None;
+                let mut response: Option<Entity> = None;
+                let mut response_enum: Option<Enum> = None;
                 let mut ex: Option<Vec<examples::Example>> = None;
                 if let Some(example) = project.examples.get(config.example.as_str()) {
                     ex = Some(example.clone());
+                }
+                match &project.models {
+                    Some(models) => {
+                        if let Some(m) = models.entities.get(config.request_model.as_str()) {
+                            request = Some(m.clone());
+                        }
+                        if let Some(m) = models.enums.get(config.request_model.as_str()) {
+                            request_enum = Some(m.clone());
+                        }
+                        if let Some(m) = models.entities.get(config.response_model.as_str()) {
+                            response = Some(m.clone());
+                        }
+                        if let Some(m) = models.enums.get(config.response_model.as_str()) {
+                            response_enum = Some(m.clone());
+                        }
+                    }
+                    _ => {
+                        // ignore
+                    }
                 }
                 let endpoint = APIEndpoint {
                     description: config.description.to_owned(),
@@ -171,6 +203,10 @@ impl APIEndpoint {
                     produces: get_mime_types(&config.produces),
                     consumes: get_mime_types(&config.consumes),
                     example: ex,
+                    request_object: request,
+                    request_enum,
+                    response_object: response,
+                    response_enum,
                 };
                 Some(endpoint)
             }
@@ -197,10 +233,15 @@ impl API {
             let api_def = API::new_from_api_definition(&endpoint.1, &project);
             api.insert(api_path, api_def);
         }
+        let mut models: Option<ProjectModel> = None;
+        if let Some(x) = &project.models {
+            models = Some(x.clone());
+        }
         APISpec {
             title: project.title.to_owned(),
             version: project.version.to_owned(),
             spec: api,
+            models,
         }
     }
 }
@@ -223,9 +264,9 @@ pub fn get_mime_types(list: &[String]) -> Vec<String> {
         ("png".to_owned(), "image/png".to_owned()),
         ("svg".to_owned(), "image/svg+xml".to_owned()),
     ]
-    .iter()
-    .cloned()
-    .collect();
+        .iter()
+        .cloned()
+        .collect();
     for item in list {
         let trimmed = item.trim().to_owned();
         match mime_map.get(&trimmed) {

@@ -111,6 +111,8 @@ pub struct APIConfiguration {
     pub consumes: Vec<String>,
     pub use_cases: Vec<String>,
     pub example: String,
+    pub request_model: String,
+    pub response_model: String,
 }
 
 impl Clone for DataType {
@@ -539,6 +541,8 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
         consumes: vec![],
         use_cases: vec![],
         example: String::new(),
+        request_model: String::new(),
+        response_model: String::new(),
     };
     let mut current_method = HttpMethod::Unknown;
     for api_pair in pair.into_inner() {
@@ -658,6 +662,22 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                                 let normalized = normalize_parsed(op.as_str());
                                 if !normalized.is_empty() {
                                     definition.operation = normalized;
+                                }
+                            }
+                        }
+                        Rule::api_request => {
+                            for op in param.into_inner() {
+                                let normalized = normalize_parsed(op.as_str());
+                                if !normalized.is_empty() {
+                                    definition.request_model = normalized;
+                                }
+                            }
+                        }
+                        Rule::api_response => {
+                            for op in param.into_inner() {
+                                let normalized = normalize_parsed(op.as_str());
+                                if !normalized.is_empty() {
+                                    definition.response_model = normalized;
                                 }
                             }
                         }

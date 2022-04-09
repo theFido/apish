@@ -44,8 +44,50 @@ pub struct Enum {
 
 #[derive(Debug, Serialize)]
 pub struct ProjectModel {
-    entities: HashMap<String, Entity>,
-    enums: HashMap<String, Enum>,
+    pub entities: HashMap<String, Entity>,
+    pub enums: HashMap<String, Enum>,
+}
+
+impl Clone for ProjectModel {
+    fn clone(&self) -> Self {
+        ProjectModel {
+            entities: self.entities.clone(),
+            enums: self.enums.clone()
+        }
+    }
+}
+
+impl Clone for Field {
+    fn clone(&self) -> Self {
+        Field {
+            identifier: self.identifier.to_string(),
+            data_type: self.data_type.to_string(),
+            description: self.description.to_string(),
+            is_array: self.is_array,
+            example: self.example.to_string(),
+            markers: self.markers.clone(),
+            tags: self.tags.clone(),
+            allowed_values: self.allowed_values.clone(),
+        }
+    }
+}
+
+impl Clone for Entity {
+    fn clone(&self) -> Self {
+        Entity{
+            name: self.name.to_string(),
+            fields: self.fields.clone(),
+        }
+    }
+}
+
+impl Clone for Enum {
+    fn clone(&self) -> Self {
+        Enum {
+            name: self.name.to_string(),
+            values: self.values.clone(),
+        }
+    }
 }
 
 fn get_enum_field(pair: Pair<Rule>) -> String {
