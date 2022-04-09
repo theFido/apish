@@ -1,0 +1,12 @@
+enum Mood { happy, mad, sad }
+
+struct Person {
+ name string required `example: 123` `go: Name` "hello, world"
+ age int
+ mood Mood
+ favoriteFood []string
+}
+
+struct ClassRoom {
+    students []Person
+}

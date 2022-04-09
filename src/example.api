@@ -37,6 +37,8 @@ apis:
       consumes: json
       status_codes: 200
       example: example_api_1
+      request: Person
+      response: ClassRoom
   /api/contact/{id}:
     get: "Something else"
         headers: opt1

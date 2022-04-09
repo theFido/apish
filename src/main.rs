@@ -1,6 +1,7 @@
 mod examples;
 mod open_api;
 mod project;
+mod models;
 
 extern crate structopt;
 #[macro_use]
@@ -26,6 +27,7 @@ use notify::{RecommendedWatcher, RecursiveMode, Watcher};
 
 use notify::DebouncedEvent::Write;
 use project::{APIConfiguration, APIDefinition, DataType, Project, StatusCode};
+use crate::models::{Entity, Enum, ProjectModel};
 
 #[derive(StructOpt)]
 struct Opt {
@@ -33,24 +35,26 @@ struct Opt {
     watch: bool,
     #[structopt(short = "f", help = "Input file")]
     input: String,
+    #[structopt(short = "m", help = "Input models file", default_value = "./models.model")]
+    models_file: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
     #[structopt(
-        short = "a",
-        help = "Open API spec file",
-        default_value = "./openapi.json"
+    short = "a",
+    help = "Open API spec file",
+    default_value = "./openapi.json"
     )]
     open_api: String,
     #[structopt(
-        short = "e",
-        help = "Examples json file",
-        default_value = "./example.json"
+    short = "e",
+    help = "Examples json file",
+    default_value = "./example.json"
     )]
     examples: String,
     #[structopt(
-        short = "s",
-        help = "Spec output file (OpenAPI superset)",
-        default_value = "./api-spec.json"
+    short = "s",
+    help = "Spec output file (OpenAPI superset)",
+    default_value = "./api-spec.json"
     )]
     spec_output: String,
 }
@@ -77,6 +81,10 @@ struct APIEndpoint {
     produces: Vec<String>,
     consumes: Vec<String>,
     example: Option<Vec<examples::Example>>,
+    request_object: Option<Entity>,
+    request_enum: Option<Enum>,
+    response_object: Option<Entity>,
+    response_enum: Option<Enum>,
 }
 
 #[derive(Debug, Serialize)]
@@ -84,6 +92,7 @@ struct APISpec {
     title: String,
     version: String,
     spec: HashMap<String, API>,
+    models: Option<ProjectModel>,
 }
 
 #[derive(Debug, Serialize)]
@@ -148,9 +157,32 @@ impl APIEndpoint {
     ) -> Option<APIEndpoint> {
         match configuration {
             Some(config) => {
+                let mut request: Option<Entity> = None;
+                let mut request_enum: Option<Enum> = None;
+                let mut response: Option<Entity> = None;
+                let mut response_enum: Option<Enum> = None;
                 let mut ex: Option<Vec<examples::Example>> = None;
                 if let Some(example) = project.examples.get(config.example.as_str()) {
                     ex = Some(example.clone());
+                }
+                match &project.models {
+                    Some(models) => {
+                        if let Some(m) = models.entities.get(config.request_model.as_str()) {
+                            request = Some(m.clone());
+                        }
+                        if let Some(m) = models.enums.get(config.request_model.as_str()) {
+                            request_enum = Some(m.clone());
+                        }
+                        if let Some(m) = models.entities.get(config.response_model.as_str()) {
+                            response = Some(m.clone());
+                        }
+                        if let Some(m) = models.enums.get(config.response_model.as_str()) {
+                            response_enum = Some(m.clone());
+                        }
+                    }
+                    _ => {
+                        // ignore
+                    }
                 }
                 let endpoint = APIEndpoint {
                     description: config.description.to_owned(),
@@ -168,6 +200,10 @@ impl APIEndpoint {
                     produces: get_mime_types(&config.produces),
                     consumes: get_mime_types(&config.consumes),
                     example: ex,
+                    request_object: request,
+                    request_enum,
+                    response_object: response,
+                    response_enum,
                 };
                 Some(endpoint)
             }
@@ -194,10 +230,15 @@ impl API {
             let api_def = API::new_from_api_definition(&endpoint.1, &project);
             api.insert(api_path, api_def);
         }
+        let mut models: Option<ProjectModel> = None;
+        if let Some(x) = &project.models {
+            models = Some(x.clone());
+        }
         APISpec {
             title: project.title.to_owned(),
             version: project.version.to_owned(),
             spec: api,
+            models,
         }
     }
 }
@@ -220,9 +261,9 @@ pub fn get_mime_types(list: &[String]) -> Vec<String> {
         ("png".to_owned(), "image/png".to_owned()),
         ("svg".to_owned(), "image/svg+xml".to_owned()),
     ]
-    .iter()
-    .cloned()
-    .collect();
+        .iter()
+        .cloned()
+        .collect();
     for item in list {
         let trimmed = item.trim().to_owned();
         match mime_map.get(&trimmed) {
@@ -239,13 +280,15 @@ pub fn get_mime_types(list: &[String]) -> Vec<String> {
 
 fn produce_files(
     source: &str,
+    models_source: &str,
     examples_source: &str,
     output: &str,
     spec_output: &str,
     open_api_output: &str,
 ) {
     let failure_icon = "🧟";
-    match Project::new_from_file(source.to_string(), examples_source.to_string()) {
+
+    match Project::new_from_file(source.to_string(), models_source.to_string(), examples_source.to_string()) {
         Ok(project) => {
             // producing api.json
             let file = File::create(output).unwrap();
@@ -274,6 +317,7 @@ fn produce_files(
 fn watch(
     source: &str,
     examples_source: &str,
+    models_source: &str,
     output: &str,
     spec_output: &str,
     open_api: &str,
@@ -285,7 +329,7 @@ fn watch(
         match rx.recv() {
             Ok(event) => {
                 if let Write(_) = event {
-                    produce_files(source, examples_source, output, spec_output, open_api);
+                    produce_files(source, models_source, examples_source, output, spec_output, open_api);
                 }
             }
             Err(e) => println!("{:?}", e),
@@ -301,6 +345,7 @@ fn main() {
         println!("Listening for changes in {} file", opt.input);
         if let Err(e) = watch(
             opt.input.as_ref(),
+            opt.models_file.as_ref(),
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),
@@ -311,6 +356,7 @@ fn main() {
     } else {
         produce_files(
             opt.input.as_ref(),
+            opt.models_file.as_ref(),
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),

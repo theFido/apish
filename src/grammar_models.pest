@@ -1,0 +1,38 @@
+alpha = { 'a'..'z' | 'A'..'Z' }
+digit = { '0'..'9' }
+
+ident = { (alpha | digit)+ }
+
+dquote = _{ "\"" }
+
+values = { ASCII_ALPHANUMERIC | "," | SPACE_SEPARATOR }
+
+string = @{ dquote ~ values* ~dquote }
+
+enumName = { ident }
+
+enu = { "enum" ~ SPACE_SEPARATOR ~ enumName ~ SPACE_SEPARATOR ~ enumDef }
+
+enumDef = { "{" ~ SPACE_SEPARATOR ~ enumItem+ ~ SPACE_SEPARATOR ~ "}" }
+
+enumItem = { enumInnerItem | ident }
+
+enumInnerItem = { ident ~ "," ~ SPACE_SEPARATOR+ }
+
+objType = { "struct" ~ SPACE_SEPARATOR ~ ident ~ SPACE_SEPARATOR ~ objDef ~ NEWLINE* }
+objDef = { "{" ~ objFieldLine* ~ "}" }
+objFieldLine = { NEWLINE* ~ objField ~ NEWLINE* }
+
+fieldName = { ident }
+fieldType = { ident }
+
+arrayIndicator = { "[]" }
+objField = { SPACE_SEPARATOR* ~ fieldName ~ SPACE_SEPARATOR+ ~ arrayIndicator? ~ fieldType ~ SPACE_SEPARATOR* ~ objOptionals* ~ objDescription* }
+objMarkers = { ident ~ SPACE_SEPARATOR* }
+objTags = { "`" ~ fieldName ~ ":" ~ SPACE_SEPARATOR* ~ ident* ~ "`" ~ SPACE_SEPARATOR*}
+objDescription = @{ string }
+objOptionals = { objMarkers | objTags }
+
+definitions = { NEWLINE* ~ enu* ~ NEWLINE* ~ objType* }
+
+definitions_file = { SOI ~ definitions ~ EOI }
