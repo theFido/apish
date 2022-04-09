@@ -4,7 +4,7 @@ use std::hash::Hash;
 use pest::Parser;
 use pest::iterators::Pair;
 
-use serde::{Deserialize, Serialize};
+use serde::{Serialize};
 
 #[derive(Parser)]
 #[grammar = "grammar_models.pest"]
@@ -238,7 +238,7 @@ fn get_object_field(pair: Pair<Rule>) -> Field {
     if tags.contains_key("example") {
         example = tags.get("example").unwrap().to_owned();
     }
-    let mut default_field = Field {
+    let default_field = Field {
         identifier,
         data_type,
         description,

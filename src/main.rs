@@ -10,15 +10,12 @@ extern crate structopt_derive;
 extern crate serde;
 extern crate serde_json;
 
-use serde_json::Value;
-
 extern crate pest;
 #[macro_use]
 extern crate pest_derive;
 
 use std::collections::HashMap;
 use std::fs::File;
-use std::ops::Deref;
 use std::sync::mpsc::channel;
 use std::time::Duration;
 
