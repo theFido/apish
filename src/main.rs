@@ -1,6 +1,7 @@
 mod examples;
 mod open_api;
 mod project;
+mod models;
 
 extern crate structopt;
 #[macro_use]

@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.0] - 2022-04-08
+### Added
+- Models grammar
+
 ## [0.7.1] - 2021-03-30
 ### Fixed
 - Title and version available in `api-spec.json` files too
