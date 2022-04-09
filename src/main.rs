@@ -34,6 +34,8 @@ struct Opt {
     watch: bool,
     #[structopt(short = "f", help = "Input file")]
     input: String,
+    #[structopt(short = "m", help = "Input models file", default_value="./models.model")]
+    models_file: String,
     #[structopt(short = "o", help = "Output file", default_value = "./api.json")]
     output: String,
     #[structopt(
@@ -240,13 +242,15 @@ pub fn get_mime_types(list: &[String]) -> Vec<String> {
 
 fn produce_files(
     source: &str,
+    models_source: &str,
     examples_source: &str,
     output: &str,
     spec_output: &str,
     open_api_output: &str,
 ) {
     let failure_icon = "🧟";
-    match Project::new_from_file(source.to_string(), examples_source.to_string()) {
+
+    match Project::new_from_file(source.to_string(), models_source.to_string(), examples_source.to_string()) {
         Ok(project) => {
             // producing api.json
             let file = File::create(output).unwrap();
@@ -275,6 +279,7 @@ fn produce_files(
 fn watch(
     source: &str,
     examples_source: &str,
+    models_source: &str,
     output: &str,
     spec_output: &str,
     open_api: &str,
@@ -286,7 +291,7 @@ fn watch(
         match rx.recv() {
             Ok(event) => {
                 if let Write(_) = event {
-                    produce_files(source, examples_source, output, spec_output, open_api);
+                    produce_files(source, models_source, examples_source, output, spec_output, open_api);
                 }
             }
             Err(e) => println!("{:?}", e),
@@ -302,6 +307,7 @@ fn main() {
         println!("Listening for changes in {} file", opt.input);
         if let Err(e) = watch(
             opt.input.as_ref(),
+            opt.models_file.as_ref(),
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),
@@ -312,6 +318,7 @@ fn main() {
     } else {
         produce_files(
             opt.input.as_ref(),
+            opt.models_file.as_ref(),
             opt.examples.as_ref(),
             opt.output.as_ref(),
             opt.spec_output.as_ref(),

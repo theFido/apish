@@ -4,10 +4,13 @@ use std::hash::Hash;
 use pest::Parser;
 use pest::iterators::Pair;
 
+use serde::{Deserialize, Serialize};
+
 #[derive(Parser)]
 #[grammar = "grammar_models.pest"]
 struct ModelsParser;
 
+#[derive(Debug, Serialize)]
 pub struct Field {
     pub identifier: String,
     pub data_type: String,
@@ -21,21 +24,25 @@ pub struct Field {
     pub allowed_values: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
 pub struct Entity {
     pub name: String,
     pub fields: HashMap<String, Field>,
 }
 
+#[derive(Debug, Serialize)]
 struct Optionals {
     markers: Vec<String>,
     tags: HashMap<String, String>,
 }
 
+#[derive(Debug, Serialize)]
 pub struct Enum {
     pub name: String,
     pub values: Vec<String>,
 }
 
+#[derive(Debug, Serialize)]
 pub struct ProjectModel {
     entities: HashMap<String, Entity>,
     enums: HashMap<String, Enum>,
@@ -113,7 +120,7 @@ fn get_identifiers(pair: Pair<Rule>) -> Vec<String> {
 fn get_object_optionals(pair: Pair<Rule>) -> Optionals {
     let mut markers = Vec::new();
     let mut tags = HashMap::new();
-    let mut lastKey = "".to_string();
+    let mut last_key = "".to_string();
     for arg_pair in pair.into_inner() {
         match arg_pair.as_rule() {
             Rule::objMarkers => {
@@ -123,11 +130,11 @@ fn get_object_optionals(pair: Pair<Rule>) -> Optionals {
                 for inner in arg_pair.into_inner() {
                     match inner.as_rule() {
                         Rule::fieldName => {
-                            lastKey = inner.as_str().to_string();
+                            last_key = inner.as_str().to_string();
                         }
                         Rule::ident => {
                             let val = inner.as_str().to_string();
-                            tags.insert(lastKey.to_owned(), val);
+                            tags.insert(last_key.to_owned(), val);
                         }
                         _ => {
                             println!("tags");
