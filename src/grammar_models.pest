@@ -3,15 +3,21 @@ digit = { '0'..'9' }
 
 ident = { (alpha | digit)+ }
 
-dquote = _{ "\"" }
-
 values = { ASCII_ALPHANUMERIC | "," | SPACE_SEPARATOR }
 
-string = @{ dquote ~ values* ~dquote }
+char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
+inner = @{ char* }
+
+string = ${ "\"" ~ inner ~ "\"" }
 
 enumName = { ident }
 
-enu = { "enum" ~ SPACE_SEPARATOR ~ enumName ~ SPACE_SEPARATOR ~ enumDef }
+enu = { "enum" ~ SPACE_SEPARATOR ~ enumName ~ SPACE_SEPARATOR ~ enumDef ~ NEWLINE+ }
 
 enumDef = { "{" ~ SPACE_SEPARATOR ~ enumItem+ ~ SPACE_SEPARATOR ~ "}" }
 
