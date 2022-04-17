@@ -5,10 +5,10 @@ use std::fs;
 
 use examples::Bag;
 
+use crate::models::{get_models, ProjectModel};
 use pest::iterators::Pair;
 use pest::Parser;
 use serde::Serialize;
-use crate::models::{get_models, ProjectModel};
 
 #[derive(Parser)]
 #[grammar = "grammar.pest"]
@@ -171,7 +171,10 @@ impl PartialEq for ProjectArgument {
 }
 
 impl Project {
-    fn new(examples: HashMap<String, Vec<examples::Example>>, models: Option<ProjectModel>) -> Project {
+    fn new(
+        examples: HashMap<String, Vec<examples::Example>>,
+        models: Option<ProjectModel>,
+    ) -> Project {
         Project {
             title: "".to_string(),
             version: "".to_string(),
@@ -189,7 +192,11 @@ impl Project {
         }
     }
 
-    pub fn new_from_file(file_name: String, models_file: String, examples_file: String) -> Result<Project, String> {
+    pub fn new_from_file(
+        file_name: String,
+        models_file: String,
+        examples_file: String,
+    ) -> Result<Project, String> {
         let api_definition = get_file_content(file_name);
         if let Err(e) = api_definition {
             return Err(e);
@@ -199,8 +206,8 @@ impl Project {
             Ok(file_content) => {
                 models = Some(get_models(file_content.as_ref()));
             }
-            _ => {
-                // do nothing
+            Err(e) => {
+                println!("Models error: {}", e);
             }
         }
         let bag = Bag::new_from_file(examples_file.as_str());
@@ -689,32 +696,32 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
                                         for status_component in inner.into_inner() {
                                             match status_component.as_rule() {
                                                 Rule::ident => {
-                                                    let code = normalize_parsed(status_component.as_str());
+                                                    let code =
+                                                        normalize_parsed(status_component.as_str());
                                                     if !code.is_empty() {
                                                         definition.status_codes.push(code);
                                                     }
-                                                },
+                                                }
                                                 Rule::group_reference => {
-                                                    let name = status_component.into_inner().as_str();
+                                                    let name =
+                                                        status_component.into_inner().as_str();
                                                     let values =
                                                         project.spread_group("status_codes", name);
                                                     for v in values {
-                                                        definition.status_codes
+                                                        definition
+                                                            .status_codes
                                                             .push(normalize_parsed(v.as_str()));
                                                     }
-                                                },
+                                                }
                                                 _ => {
-                                                //
+                                                    //
                                                 }
                                             }
                                         }
-                                    },
-                                    _ => {
-
                                     }
+                                    _ => {}
                                 }
                             }
-
                         }
                         _ => {
                             // println!("ignoring param {:?}", param);

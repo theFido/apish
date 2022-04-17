@@ -11,6 +11,8 @@ space = _{ " " | "\t" }
 alpha = _{ 'a'..'z' | 'A'..'Z' }
 digit = { '0'..'9' }
 
+
+
 valid_special = _{ "_" | "-" }
 
 ident = { (alpha | digit | valid_special )+ }
@@ -33,9 +35,7 @@ char = {
 
 inner = @{ char* }
 
-d_quote = _{ "\"" }
-
-string = @{ d_quote ~ inner ~ d_quote }
+string = ${ "\"" ~ inner ~ "\"" }
 
 options = { space+ ~ (modified_pair | single_modifiers | default_value) }
 

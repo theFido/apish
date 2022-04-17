@@ -1,5 +1,7 @@
 enum Mood { happy, mad, sad }
 
+enum Options { first, second }
+
 struct Person {
  name string required `example: 123` `go: Name` "hello, world"
  age int

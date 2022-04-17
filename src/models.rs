@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use pest::Parser;
 use pest::iterators::Pair;
+use pest::Parser;
 
-use serde::{Serialize};
+use serde::Serialize;
 
 #[derive(Parser)]
 #[grammar = "grammar_models.pest"]
@@ -52,7 +52,7 @@ impl Clone for ProjectModel {
     fn clone(&self) -> Self {
         ProjectModel {
             entities: self.entities.clone(),
-            enums: self.enums.clone()
+            enums: self.enums.clone(),
         }
     }
 }
@@ -74,7 +74,7 @@ impl Clone for Field {
 
 impl Clone for Entity {
     fn clone(&self) -> Self {
-        Entity{
+        Entity {
             name: self.name.to_string(),
             fields: self.fields.clone(),
         }
@@ -95,7 +95,7 @@ fn get_enum_field(pair: Pair<Rule>) -> String {
         match arg_pair.as_rule() {
             Rule::enumInnerItem => {
                 return arg_pair.into_inner().next().unwrap().as_str().to_string();
-            },
+            }
             Rule::ident => {
                 return arg_pair.as_str().to_string();
             }
@@ -104,7 +104,7 @@ fn get_enum_field(pair: Pair<Rule>) -> String {
             }
         }
     }
-    return "".to_string()
+    return "".to_string();
 }
 
 fn get_enum_definition(pair: Pair<Rule>) -> Vec<String> {
@@ -113,7 +113,7 @@ fn get_enum_definition(pair: Pair<Rule>) -> Vec<String> {
         match arg_pair.as_rule() {
             Rule::enumItem => {
                 values.push(get_enum_field(arg_pair));
-            },
+            }
             _ => {
                 // nothing to do
             }
@@ -128,8 +128,8 @@ fn get_enum(pair: Pair<Rule>) -> Enum {
     for arg_pair in pair.into_inner() {
         match arg_pair.as_rule() {
             Rule::enumName => {
-                name =  arg_pair.as_str().to_string();
-            },
+                name = arg_pair.as_str().to_string();
+            }
             Rule::enumDef => {
                 values = get_enum_definition(arg_pair);
             }
@@ -138,10 +138,7 @@ fn get_enum(pair: Pair<Rule>) -> Enum {
             }
         }
     }
-    Enum {
-        name,
-        values,
-    }
+    Enum { name, values }
 }
 
 fn get_identifiers(pair: Pair<Rule>) -> Vec<String> {
@@ -189,10 +186,7 @@ fn get_object_optionals(pair: Pair<Rule>) -> Optionals {
             }
         }
     }
-    Optionals {
-        markers,
-        tags,
-    }
+    Optionals { markers, tags }
 }
 
 fn get_object_field(pair: Pair<Rule>) -> Field {
@@ -246,7 +240,7 @@ fn get_object_field(pair: Pair<Rule>) -> Field {
         example,
         markers,
         tags,
-        allowed_values: vec![]
+        allowed_values: vec![],
     };
     default_field
 }
@@ -270,7 +264,7 @@ fn get_entity_field(pair: Pair<Rule>) -> Field {
         example: "".to_string(),
         markers: vec![],
         tags: Default::default(),
-        allowed_values: vec![]
+        allowed_values: vec![],
     }
 }
 
@@ -281,28 +275,26 @@ fn get_entity(pair: Pair<Rule>) -> Entity {
         match arg_pair.as_rule() {
             Rule::ident => {
                 name = arg_pair.as_str().to_string();
-            },
+            }
             Rule::objDef => {
                 for arg_pair_alt in arg_pair.into_inner() {
                     let field = get_entity_field(arg_pair_alt);
                     fields.insert(field.identifier.to_owned(), field);
                 }
-            },
+            }
             _ => {
                 // nothing to do
             }
         }
     }
-    Entity {
-        name,
-        fields,
-    }
+    Entity { name, fields }
 }
 
 pub fn get_models(from_model: &str) -> ProjectModel {
     let content = ModelsParser::parse(Rule::definitions, from_model)
         .expect("cannot parse")
-        .next().unwrap();
+        .next()
+        .unwrap();
 
     let mut enums = HashMap::new();
     let mut entities = HashMap::new();
@@ -321,10 +313,7 @@ pub fn get_models(from_model: &str) -> ProjectModel {
             }
         }
     }
-    ProjectModel {
-        entities,
-        enums,
-    }
+    ProjectModel { entities, enums }
 }
 
 #[test]
@@ -340,7 +329,10 @@ fn test_parser() {
     assert_eq!(person.name, "Person");
     assert_eq!(person.fields.len(), 4);
     assert_eq!(person.fields.get("name").unwrap().markers.len(), 1);
-    assert_eq!(person.fields.get("name").unwrap().markers.get(0).unwrap(), "required");
+    assert_eq!(
+        person.fields.get("name").unwrap().markers.get(0).unwrap(),
+        "required"
+    );
     assert_eq!(person.fields.get("name").unwrap().example, "123");
 
     let class_room = result.entities.get("ClassRoom").unwrap();

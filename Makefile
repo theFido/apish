@@ -12,8 +12,19 @@ fmt:
 clippy:
 	cargo clippy
 
-release: doc test fmt clippy
+release: doc test fmt clippy build deploy
 	cargo build --release
+
+build:
+	cargo build --release
+
+clean:
+	sudo rm -r /usr/local/bin/apish
+
+test-release: clean build deploy
+
+deploy:
+	sudo cp target/release/apish /usr/local/bin/apish
 
 docker-build:
 	docker build -t=apish:$(VERSION) .
