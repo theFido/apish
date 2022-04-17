@@ -25,7 +25,7 @@ enumItem = { enumInnerItem | ident }
 
 enumInnerItem = { ident ~ "," ~ SPACE_SEPARATOR+ }
 
-objType = { "struct" ~ SPACE_SEPARATOR ~ ident ~ SPACE_SEPARATOR ~ objDef ~ NEWLINE* }
+objType = { "struct" ~ SPACE_SEPARATOR ~ ident ~ SPACE_SEPARATOR* ~ objDef ~ NEWLINE* }
 objDef = { "{" ~ objFieldLine* ~ "}" }
 objFieldLine = { NEWLINE* ~ objField ~ NEWLINE* }
 
