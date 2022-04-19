@@ -101,6 +101,7 @@ struct APISpec {
 
 #[derive(Debug, Serialize)]
 struct API {
+    position: isize,
     #[serde(skip_serializing_if = "Option::is_none")]
     get: Option<APIEndpoint>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -219,6 +220,7 @@ impl APIEndpoint {
 impl API {
     fn new_from_api_definition(def: &APIDefinition, project: &Project) -> API {
         API {
+            position: def.position,
             get: APIEndpoint::new_from_api_configuration(&def.get, project),
             post: APIEndpoint::new_from_api_configuration(&def.post, project),
             put: APIEndpoint::new_from_api_configuration(&def.put, project),
