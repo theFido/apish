@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.0] - 2022-04-19
+### Added
+- Add attribute for API declaration order
+
 ## [0.8.0] - 2022-04-08
 ### Added
 - Models grammar

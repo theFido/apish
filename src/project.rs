@@ -38,6 +38,7 @@ enum PairModifiers {
 
 #[derive(Debug, Serialize)]
 pub struct APIDefinition {
+    pub position: isize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub get: Option<APIConfiguration>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -218,7 +219,7 @@ impl Project {
                     Some(pair) => {
                         let mut project = Project::new(bag.examples, models);
 
-                        parse_value(pair, &mut project);
+                        parse_value(pair, 0, &mut project);
                         Ok(project)
                     }
                     None => Err("Cannot process file".to_string()),
@@ -741,10 +742,11 @@ fn parse_api_operation(pair: Pair<Rule>, project: &Project) -> (HttpMethod, APIC
 }
 
 /// API rule parser
-fn parse_api(pair: Pair<Rule>, project: &Project) -> APIWrapper {
+fn parse_api(pair: Pair<Rule>, at_position: isize, project: &Project) -> APIWrapper {
     let mut wrapper = APIWrapper {
         endpoint: "".to_string(),
         definition: APIDefinition {
+            position: at_position,
             get: None,
             post: None,
             put: None,
@@ -802,11 +804,12 @@ fn normalize_parsed(source: &str) -> String {
 }
 
 /// Parses the top level language keywords
-fn parse_value(pair: Pair<Rule>, project: &mut Project) {
+fn parse_value(pair: Pair<Rule>, current_position: isize, project: &mut Project) {
+    let mut current_api_index = current_position;
     match pair.as_rule() {
         Rule::api_file => {
             pair.into_inner().for_each(|local_pair| {
-                parse_value(local_pair, project);
+                parse_value(local_pair, current_api_index, project);
             });
         }
         Rule::spec_header => {
@@ -858,7 +861,8 @@ fn parse_value(pair: Pair<Rule>, project: &mut Project) {
         }
         Rule::apis => {
             for api in pair.into_inner() {
-                let wrapped_api = parse_api(api, project);
+                let wrapped_api = parse_api(api, current_api_index, project);
+                current_api_index+=1;
                 project
                     .endpoints
                     .insert(wrapped_api.endpoint, wrapped_api.definition);
