@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "apish"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "notify",
  "pest",
