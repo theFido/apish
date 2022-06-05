@@ -38,3 +38,7 @@ docker-tag:
 
 docker-publish: docker-build docker-smoke docker-tag
 	docker push elfidomx/apish:$(VERSION)
+
+
+build-wasm:
+	wasm-pack build --release --target web

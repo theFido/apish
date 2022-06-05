@@ -5,6 +5,7 @@ use pest::iterators::Pair;
 use pest::Parser;
 
 use serde::Serialize;
+use pest_derive::Parser;
 
 #[derive(Parser)]
 #[grammar = "grammar_models.pest"]
