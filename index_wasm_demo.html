@@ -1,0 +1,130 @@
+<html>
+<head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+    <style>
+        body { font-family: Arial; }
+        h1 { color: cornflowerblue; }
+        h2, h3 { color: darkcyan; }
+        .fieldName { font-family: monospace; color: cadetblue; font-weight: bold; font-size: 1.2em; }
+        .main-container { margin: auto; }
+        fieldset { margin: 10px; padding: 20px; }
+        legend { background: cadetblue; color: azure; padding: 5px; }
+
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <h1>Data model</h1>
+    <h2>Entities</h2>
+    <div id="entities">
+    </div>
+    <h3>Enums</h3>
+    <div id="enums">
+    </div>
+</div>
+<script type="module">
+
+    function getFieldRow(field) {
+        const row = document.createElement('tr');
+        const arrayMaker = (field.is_array) ? 'Array of ' : '';
+        const dataType = `${arrayMaker}${field.data_type}`;
+        const req = (field.markers.includes('required')) ? '*' : '';
+        const cols = [field.identifier, dataType, req, field.description, field.example];
+        let colIndex = 0;
+        cols.forEach(col => {
+            const td = document.createElement('td');
+            td.innerText = col;
+            if (colIndex === 0) {
+                td.className = 'fieldName';
+            }
+            row.appendChild(td);
+            colIndex++;
+        });
+        return row;
+    }
+
+    function getTableForFields(fields) {
+        const table = document.createElement('table');
+        const headers = ['Field', 'Type', 'Required', 'Description', 'Example'];
+        const rowHeader = document.createElement('tr');
+        headers.forEach(h => {
+           const th = document.createElement('th');
+           th.innerText = h;
+           rowHeader.appendChild(th);
+        });
+        table.appendChild(rowHeader);
+        const keys = Object.keys(fields);
+        keys.forEach(k => {
+           const row = getFieldRow(fields[k]);
+           table.appendChild(row);
+        });
+        return table;
+    }
+
+    function newEntity(entity) {
+        const el = document.createElement('fieldset');
+        const legend = document.createElement('legend');
+        legend.innerText = `${entity.name}`;
+        el.appendChild(legend);
+        el.appendChild(getTableForFields(entity.fields));
+        return el;
+    }
+
+    function newEnum(enumDefinition) {
+        const el = document.createElement('fieldset');
+        const legend = document.createElement('legend');
+        legend.innerText = enumDefinition.name;
+        const d = document.createElement('div');
+        d.className = 'fieldName';
+        d.innerText = enumDefinition.values.join(', ');
+        el.appendChild(legend);
+        el.appendChild(d);
+        return el;
+    }
+
+    import init, { parse_models } from './pkg/apishw.js';
+
+    async function run() {
+        await init();
+
+
+        try {
+            const input = `enum Theme { dark, light }
+
+enum OperationType { creation, cancellation }
+
+enum OperationResult { success, failure }
+
+struct Operation {
+    userName string required \`example:fido\`
+    defaultTheme Theme
+    operation OperationType required
+    requestTime number required "Request time as unix epoch in milliseconds"
+    result OperationResult
+    tags []String required
+}
+`;
+            const entities = document.getElementById('entities');
+            const enumsDiv = document.getElementById('enums');
+            const result = parse_models(input);
+            const model = JSON.parse(result);
+            model.enums.forEach(en => {
+                const element = newEnum(en);
+                enumsDiv.appendChild(element);
+            });
+            model.entities.forEach(entity => {
+                console.log(entity);
+                const element = newEntity(entity);
+                entities.appendChild(element);
+            });
+        } catch(ex) {
+            // content.innerText = ex.toString();
+            alert(ex.toString());
+        }
+    }
+
+    run();
+</script>
+</body>
+</html>
+
