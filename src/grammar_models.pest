@@ -1,7 +1,8 @@
 alpha = { 'a'..'z' | 'A'..'Z' }
 digit = { '0'..'9' }
+allowed_chars = { "_" }
 
-ident = { (alpha | digit)+ }
+ident = { (alpha | digit | allowed_chars)+ }
 
 values = { ASCII_ALPHANUMERIC | "," | SPACE_SEPARATOR }
 
