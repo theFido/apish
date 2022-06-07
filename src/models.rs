@@ -190,6 +190,16 @@ fn get_object_optionals(pair: Pair<Rule>) -> Optionals {
     Optionals { markers, tags }
 }
 
+fn normalize_parsed(source: &str) -> String {
+    let mut normalized = source.trim().to_owned();
+    let d_quote = "\"";
+    if normalized.starts_with(d_quote) && normalized.ends_with(d_quote) {
+        normalized.remove(normalized.len() - 1);
+        normalized.remove(0);
+    }
+    normalized
+}
+
 fn get_object_field(pair: Pair<Rule>) -> Field {
     let mut identifier: String = "".to_string();
     let mut data_type: String = "".to_string();
@@ -211,7 +221,7 @@ fn get_object_field(pair: Pair<Rule>) -> Field {
                 }
             }
             Rule::objDescription => {
-                description = arg_pair.as_str().to_owned();
+                description = normalize_parsed(&arg_pair.as_str());
             }
             Rule::fieldType => {
                 data_type = arg_pair.as_str().to_owned();
